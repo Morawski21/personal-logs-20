@@ -82,7 +82,7 @@ export function ProductivityChart({ data }: ProductivityChartProps) {
                       {/* Tooltip on hover */}
                       <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                         <div className="bg-black/80 text-white text-xs px-2 py-1 rounded whitespace-nowrap pointer-events-none">
-                          {category}: {Math.round(value)}min
+                          {Math.round(value)}min
                         </div>
                       </div>
                     </motion.div>

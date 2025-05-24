@@ -190,13 +190,13 @@ def get_productivity_chart() -> Dict[str, Any]:
             
             chart_data.append(day_data)
         
-        # Define colors for each category
+        # Define colors for each category (matching original app colors)
         category_colors = {
-            "Tech": "#8b5cf6",      # Purple
-            "YouTube": "#ef4444",   # Red  
-            "Czytanie": "#10b981",  # Emerald
-            "Gitara": "#f59e0b",    # Amber
-            "Inne": "#06b6d4"       # Cyan
+            "Tech": "#21d3ed",      # Cyan/Blue - for work/tech 
+            "YouTube": "#ef4444",   # Red - for YouTube/entertainment
+            "Czytanie": "#10b981",  # Green - for reading
+            "Gitara": "#fbbf23",    # Yellow/Amber - for music/guitar  
+            "Inne": "#94a3b8"       # Gray/Slate - for misc/other
         }
         
         return {
