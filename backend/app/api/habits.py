@@ -6,7 +6,16 @@ from app.services.excel_service import ExcelService
 from app.services.habit_config_service import HabitConfigService
 from app.core.config import settings
 
-class HabitUpdateRequest(BaseModel):\n    name: str = None\n    emoji: str = None\n    active: bool = None\n    is_personal: bool = None\n    order: int = None\n\nrouter = APIRouter()\nexcel_service = ExcelService(settings.EXCEL_DATA_PATH)\nconfig_service = HabitConfigService()
+class HabitUpdateRequest(BaseModel):
+    name: str = None
+    emoji: str = None
+    active: bool = None
+    is_personal: bool = None
+    order: int = None
+
+router = APIRouter()
+excel_service = ExcelService(settings.EXCEL_DATA_PATH)
+config_service = HabitConfigService()
 
 @router.get("/", response_model=List[Habit])
 def get_habits():
