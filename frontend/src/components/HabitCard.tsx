@@ -2,7 +2,9 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Lock, Star, Flame, Trophy } from 'lucide-react'
+import { useSortable } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import { Lock, Star, Flame, Trophy, GripVertical } from 'lucide-react'
 import type { Habit } from '@/types/habit'
 import { cn } from '@/lib/utils'
 
@@ -14,10 +16,29 @@ interface HabitCardProps {
 export function HabitCard({ habit, className }: HabitCardProps) {
   const [isRevealed, setIsRevealed] = useState(false)
   
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: habit.id })
+  
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  }
+  
   const isRecordBreaking = habit.current_streak >= habit.best_streak && habit.current_streak > 0
   const isActive = habit.current_streak > 0
   
-  const handleClick = () => {
+  const handleClick = (e: React.MouseEvent) => {
+    // Don't trigger reveal when clicking drag handle
+    if ((e.target as HTMLElement).closest('.drag-handle')) {
+      return
+    }
+    
     if (habit.is_personal) {
       setIsRevealed(!isRevealed)
     }
@@ -25,17 +46,28 @@ export function HabitCard({ habit, className }: HabitCardProps) {
 
   return (
     <motion.div
+      ref={setNodeRef}
+      style={style}
       className={cn(
         "relative bg-card border border-border rounded-xl p-5 overflow-hidden cursor-pointer group",
         "h-40 flex flex-col justify-between transition-all duration-300",
         "shadow-lg hover:shadow-xl",
+        isDragging && "opacity-50 z-50",
         className
       )}
       onClick={handleClick}
-      whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
+      whileHover={{ scale: isDragging ? 1 : 1.02 }}
+      whileTap={{ scale: isDragging ? 1 : 0.98 }}
       layout
     >
+      {/* Drag Handle */}
+      <div 
+        className="drag-handle absolute top-2 left-2 opacity-0 group-hover:opacity-50 hover:opacity-100 transition-opacity p-1 cursor-grab active:cursor-grabbing"
+        {...attributes}
+        {...listeners}
+      >
+        <GripVertical className="h-4 w-4 text-muted-foreground" />
+      </div>
       {/* Background Effects */}
       {habit.completed_today && (
         <>

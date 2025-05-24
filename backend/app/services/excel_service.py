@@ -23,25 +23,36 @@ class ExcelService:
         try:
             df = pd.read_excel(file_path)
             
+            # System columns that should not be treated as habits (from old app)
+            SYSTEM_COLUMNS = {'Data', 'WEEKDAY', 'Razem', 'Unnamed: 8', 'Unnamed: 18'}
+            
             # Assume first column is date
             date_col = df.columns[0]
             df[date_col] = pd.to_datetime(df[date_col]).dt.date
             
-            # Extract habit columns (exclude date column)
-            habit_columns = [col for col in df.columns if col != date_col]
+            # Extract habit columns (exclude date and system columns)
+            habit_columns = [col for col in df.columns 
+                           if col != date_col and col not in SYSTEM_COLUMNS 
+                           and not col.startswith('Unnamed')]
             
             habits = []
             entries = []
             
             for i, col in enumerate(habit_columns):
-                # Extract emoji and name from column header
-                emoji_match = re.search(r'([\U0001F600-\U0001F64F\U0001F300-\U0001F5FF\U0001F680-\U0001F6FF\U0001F1E0-\U0001F1FF\u2600-\u26FF\u2700-\u27BF])', col)
-                emoji = emoji_match.group(1) if emoji_match else '📝'
-                name = re.sub(r'[\U0001F600-\U0001F64F\U0001F300-\U0001F5FF\U0001F680-\U0001F6FF\U0001F1E0-\U0001F1FF\u2600-\u26FF\u2700-\u27BF]', '', col).strip()
+                # Detect personal habits (🔒 prefix or contains "Personal")
+                is_personal = col.startswith('🔒') or 'personal' in col.lower()
+                
+                # Smart emoji mapping based on habit name (from old app logic)
+                emoji = self._get_smart_emoji(col)
+                name = col.replace('🔒 ', '').strip()  # Remove lock emoji from display name
                 
                 # Determine habit type based on values
                 sample_values = df[col].dropna().head(10)
                 habit_type = self._determine_habit_type(sample_values)
+                
+                # Skip if no meaningful data
+                if len(sample_values) == 0:
+                    continue
                 
                 habit_id = f"habit_{i}"
                 habit = Habit(
@@ -52,7 +63,8 @@ class ExcelService:
                     order=i,
                     current_streak=0,
                     best_streak=0,
-                    completed_today=False
+                    completed_today=False,
+                    is_personal=is_personal
                 )
                 habits.append(habit)
                 
@@ -77,6 +89,47 @@ class ExcelService:
         except Exception as e:
             print(f"Error parsing Excel file {file_path}: {e}")
             return {'habits': [], 'entries': [], 'file_path': str(file_path), 'last_modified': 0}
+    
+    def _get_smart_emoji(self, habit_name: str) -> str:
+        """Get smart emoji based on habit name (from old app logic)"""
+        name_lower = habit_name.lower()
+        
+        # Mapping for common habit patterns
+        emoji_mappings = {
+            # Work/Learning
+            'tech': '💻', 'praca': '💻', 'work': '💻', 'code': '💻', 'coding': '💻',
+            'youtube': '🎥', 'video': '🎥',
+            'czytanie': '📚', 'reading': '📚', 'read': '📚', 'book': '📚',
+            'gitara': '🎸', 'guitar': '🎸', 'music': '🎵',
+            'inne': '🔧', 'other': '🔧', 'misc': '🔧',
+            
+            # Health/Fitness
+            'sport': '🏃', 'fitness': '🏃', 'exercise': '🏃', 'workout': '💪',
+            'clean': '🧹', 'cleaning': '🧹',
+            'suplementy': '💊', 'supplements': '💊', 'vitamins': '💊',
+            
+            # Finance/Organization
+            'ynab': '💰', 'money': '💰', 'budget': '💰', 'finance': '💰',
+            'anki': '🧠', 'study': '🧠', 'learning': '🧠',
+            'pamiętnik': '✒️', 'diary': '✒️', 'journal': '✒️',
+            'plan': '📝', 'planning': '📝', 'todo': '📝',
+            
+            # Habits/Restrictions
+            'porn': '🚫', 'no porn': '🚫',
+            '9gag': '📱', 'scrolling': '📱', 'social': '📱',
+            'gaming': '🎮', 'game': '🎮', 'games': '🎮',
+            'cronometer': '⌚', 'food': '🍽️', 'calories': '⌚',
+            
+            # Others
+            'accessories': '💍', 'jewelry': '💍',
+        }
+        
+        # Check for direct matches first
+        for keyword, emoji in emoji_mappings.items():
+            if keyword in name_lower:
+                return emoji
+        
+        return "📝"  # Default emoji
     
     def _determine_habit_type(self, values: pd.Series) -> str:
         """Determine habit type based on sample values"""
