@@ -36,11 +36,23 @@ def get_habits():
             for habit in habits:
                 if habit.id in streaks:
                     streak_data = streaks[habit.id]
-                    habit.current_streak = streak_data['current_streak']
-                    habit.best_streak = streak_data['best_streak']
-                    habit.completed_today = streak_data['completed_today']
-                
-                all_habits.append(habit)
+                    # Create new habit object with updated streak data
+                    updated_habit = Habit(
+                        id=habit.id,
+                        name=habit.name,
+                        emoji=habit.emoji,
+                        habit_type=habit.habit_type,
+                        color=habit.color,
+                        active=habit.active,
+                        order=habit.order,
+                        is_personal=habit.is_personal,
+                        current_streak=streak_data['current_streak'],
+                        best_streak=streak_data['best_streak'],
+                        completed_today=streak_data['completed_today']
+                    )
+                    all_habits.append(updated_habit)
+                else:
+                    all_habits.append(habit)
         
         return all_habits
     except Exception as e:
