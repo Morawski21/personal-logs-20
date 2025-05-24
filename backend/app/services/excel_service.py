@@ -132,40 +132,54 @@ class ExcelService:
         return "📝"  # Default emoji
     
     def _determine_habit_type(self, values: pd.Series) -> str:
-        """Determine habit type based on sample values"""
+        """Determine habit type based on sample values (from original app logic)"""
         if values.empty:
             return 'binary'
         
-        # Check for time patterns (e.g., "1.5h", "30min")
-        time_pattern = re.compile(r'\d+(\.\d+)?(h|hr|hour|min|m)\b', re.IGNORECASE)
-        if any(time_pattern.search(str(val)) for val in values):
-            return 'time'
+        # Try to convert to numeric first
+        try:
+            numeric_values = pd.to_numeric(values, errors='coerce')
+            if not numeric_values.isna().all():
+                # Check if values look like time (larger numbers, typically minutes)
+                max_val = numeric_values.max()
+                if max_val > 10:  # Likely time in minutes
+                    return 'time'
+                else:  # Likely binary (0/1)
+                    return 'binary'
+        except:
+            pass
         
-        # Check for binary patterns (checkmarks, 1/0, yes/no)
-        binary_patterns = ['✓', '✗', 'x', '1', '0', 'yes', 'no', 'true', 'false']
-        if all(str(val).lower().strip() in binary_patterns for val in values):
-            return 'binary'
-        
-        return 'description'
+        # Check if all values are strings (descriptions)
+        if values.dtype == 'object':
+            return 'description'
+            
+        return 'binary'  # Default fallback
     
     def _is_completed(self, value: Any, habit_type: str) -> bool:
-        """Determine if a habit entry represents completion"""
+        """Determine if a habit entry represents completion (from original app logic)"""
         if pd.isna(value):
             return False
-        
-        value_str = str(value).lower().strip()
-        
+            
         if habit_type == 'binary':
-            return value_str in ['✓', '1', 'yes', 'true', 'x']
+            # Binary habits: only completed if value is exactly 1.0
+            try:
+                return float(value) == 1.0
+            except (ValueError, TypeError):
+                return False
+                
         elif habit_type == 'time':
-            # Any time value is considered completion
-            return len(value_str) > 0 and value_str != '0'
+            # Time habits: completed if >= 20 minutes
+            try:
+                return float(value) >= 20.0
+            except (ValueError, TypeError):
+                return False
+                
         else:  # description
-            # Any non-empty description is considered completion
-            return len(value_str) > 0
+            # Description habits don't have streaks in the original app
+            return False
     
     def calculate_streaks(self, entries: List[HabitEntry]) -> Dict[str, Dict[str, int]]:
-        """Calculate current and best streaks for each habit"""
+        """Calculate current and best streaks for each habit (from original app logic)"""
         streaks = {}
         
         # Group entries by habit_id
@@ -179,23 +193,35 @@ class ExcelService:
             # Sort by date
             sorted_entries = sorted(habit_entry_list, key=lambda x: x.date)
             
+            # Calculate current streak (from original app logic)
             current_streak = 0
+            today = date.today()
+            
+            # Start from the end and count backwards
+            for i in range(len(sorted_entries) - 1, -1, -1):
+                entry = sorted_entries[i]
+                
+                # Skip today if it's 0 (potentially unfilled)
+                if entry.date == today and not entry.completed:
+                    continue
+                    
+                if entry.completed:
+                    current_streak += 1
+                else:
+                    break  # Break on explicit 0/false
+            
+            # Calculate best streak
             best_streak = 0
             temp_streak = 0
             
-            for i, entry in enumerate(sorted_entries):
+            for entry in sorted_entries:
                 if entry.completed:
                     temp_streak += 1
                     best_streak = max(best_streak, temp_streak)
-                    
-                    # Check if this is part of current streak (consecutive days)
-                    if i == len(sorted_entries) - 1:  # Last entry
-                        current_streak = temp_streak
                 else:
                     temp_streak = 0
             
             # Check if today is completed
-            today = date.today()
             completed_today = any(
                 entry.date == today and entry.completed 
                 for entry in sorted_entries

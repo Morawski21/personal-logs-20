@@ -1,16 +1,46 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import { Target, TrendingUp, Calendar, Award } from 'lucide-react'
+import { Target, TrendingUp, Calendar, Award, BarChart3 } from 'lucide-react'
 import { useHabitStore } from '@/stores/habitStore'
+import { WeeklyChart } from './WeeklyChart'
+
+interface ChartData {
+  date: string
+  weekday: string
+  total: number
+  [key: string]: any
+}
+
+interface WeeklyChartData {
+  chart_data: ChartData[]
+  habits: string[]
+}
 
 export function Analytics() {
   const { analytics, fetchAnalytics } = useHabitStore()
+  const [weeklyData, setWeeklyData] = useState<WeeklyChartData | null>(null)
+  const [loadingChart, setLoadingChart] = useState(true)
   
   useEffect(() => {
     fetchAnalytics()
+    fetchWeeklyChart()
   }, [])
+  
+  const fetchWeeklyChart = async () => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/analytics/weekly-chart`)
+      if (response.ok) {
+        const data = await response.json()
+        setWeeklyData(data)
+      }
+    } catch (error) {
+      console.error('Error fetching weekly chart:', error)
+    } finally {
+      setLoadingChart(false)
+    }
+  }
   
   if (!analytics) {
     return (
@@ -107,6 +137,33 @@ export function Analytics() {
           <p className="text-sm text-muted-foreground mt-2">
             {analytics.completed_today} of {analytics.total_habits} habits completed today
           </p>
+        </motion.div>
+        
+        {/* Weekly Chart */}
+        <motion.div
+          className="bg-card border border-border rounded-xl p-6 mt-6"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.6 }}
+        >
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <BarChart3 className="h-5 w-5 text-primary" />
+            </div>
+            <h3 className="text-xl font-semibold text-card-foreground">Weekly Time Distribution</h3>
+          </div>
+          
+          {loadingChart ? (
+            <div className="h-64 flex items-center justify-center">
+              <div className="text-muted-foreground">Loading chart...</div>
+            </div>
+          ) : weeklyData && weeklyData.chart_data.length > 0 ? (
+            <WeeklyChart data={weeklyData} />
+          ) : (
+            <div className="h-64 flex items-center justify-center">
+              <div className="text-muted-foreground">No chart data available</div>
+            </div>
+          )}
         </motion.div>
       </motion.div>
     </div>
