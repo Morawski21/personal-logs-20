@@ -112,3 +112,39 @@ def reorder_habits(habit_orders: Dict[str, int]):
             raise HTTPException(status_code=500, detail="Failed to save new order")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error reordering habits: {str(e)}")
+
+@router.get("/hidden")
+def get_hidden_habits():
+    """Get all hidden habits from configuration"""
+    try:
+        config = config_service.load_config()
+        hidden_habits = []
+        
+        for habit_id, habit_config in config.items():
+            if not habit_config.active:
+                hidden_habits.append({
+                    "id": habit_id,
+                    "name": habit_config.name,
+                    "emoji": habit_config.emoji,
+                    "is_personal": habit_config.is_personal,
+                    "order": habit_config.order
+                })
+        
+        # Sort by order
+        hidden_habits.sort(key=lambda x: x['order'])
+        return hidden_habits
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting hidden habits: {str(e)}")
+
+@router.post("/{habit_id}/restore")
+def restore_habit(habit_id: str):
+    """Restore a hidden habit"""
+    try:
+        success = config_service.update_habit(habit_id, {"active": True})
+        
+        if success:
+            return {"message": "Habit restored successfully"}
+        else:
+            raise HTTPException(status_code=404, detail="Habit not found")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error restoring habit: {str(e)}")
