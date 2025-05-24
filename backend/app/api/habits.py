@@ -1,11 +1,12 @@
 from fastapi import APIRouter, HTTPException
-from typing import List
+from typing import List, Dict, Any
+from pydantic import BaseModel
 from app.models.habit import Habit
 from app.services.excel_service import ExcelService
+from app.services.habit_config_service import HabitConfigService
 from app.core.config import settings
 
-router = APIRouter()
-excel_service = ExcelService(settings.EXCEL_DATA_PATH)
+class HabitUpdateRequest(BaseModel):\n    name: str = None\n    emoji: str = None\n    active: bool = None\n    is_personal: bool = None\n    order: int = None\n\nrouter = APIRouter()\nexcel_service = ExcelService(settings.EXCEL_DATA_PATH)\nconfig_service = HabitConfigService()
 
 @router.get("/", response_model=List[Habit])
 def get_habits():
@@ -44,3 +45,49 @@ def refresh_habits():
         return {"message": "Habits refreshed successfully", "count": len(habits)}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error refreshing habits: {str(e)}")
+
+@router.put("/{habit_id}")
+def update_habit(habit_id: str, updates: HabitUpdateRequest):
+    """Update habit configuration"""
+    try:
+        update_dict = {k: v for k, v in updates.dict().items() if v is not None}
+        success = config_service.update_habit(habit_id, update_dict)
+        
+        if success:
+            return {"message": "Habit updated successfully"}
+        else:
+            raise HTTPException(status_code=404, detail="Habit not found")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error updating habit: {str(e)}")
+
+@router.delete("/{habit_id}")
+def delete_habit(habit_id: str):
+    """Delete (hide) habit from display"""
+    try:
+        success = config_service.delete_habit(habit_id)
+        
+        if success:
+            return {"message": "Habit deleted successfully"}
+        else:
+            raise HTTPException(status_code=404, detail="Habit not found")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error deleting habit: {str(e)}")
+
+@router.post("/reorder")
+def reorder_habits(habit_orders: Dict[str, int]):
+    """Reorder habits"""
+    try:
+        config = config_service.load_config()
+        
+        for habit_id, new_order in habit_orders.items():
+            if habit_id in config:
+                config[habit_id].order = new_order
+        
+        success = config_service.save_config(config)
+        
+        if success:
+            return {"message": "Habits reordered successfully"}
+        else:
+            raise HTTPException(status_code=500, detail="Failed to save new order")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error reordering habits: {str(e)}")

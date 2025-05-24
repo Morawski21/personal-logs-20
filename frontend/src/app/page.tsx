@@ -4,12 +4,14 @@ import { useEffect, useState } from 'react'
 import { HabitGrid } from '@/components/HabitGrid'
 import { Header } from '@/components/Header'
 import { Analytics } from '@/components/Analytics'
+import { Settings } from '@/components/Settings'
 import { useHabitStore } from '@/stores/habitStore'
 import type { Habit } from '@/types/habit'
 
 export default function Home() {
   const { habits, loading, error, fetchHabits } = useHabitStore()
   const [showAnalytics, setShowAnalytics] = useState(false)
+  const [showSettings, setShowSettings] = useState(false)
 
   useEffect(() => {
     fetchHabits()
@@ -48,9 +50,20 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header onToggleAnalytics={() => setShowAnalytics(!showAnalytics)} />
+      <Header 
+        onToggleAnalytics={() => {
+          setShowAnalytics(!showAnalytics)
+          setShowSettings(false)
+        }}
+        onToggleSettings={() => {
+          setShowSettings(!showSettings)
+          setShowAnalytics(false)
+        }}
+      />
       
-      {showAnalytics ? (
+      {showSettings ? (
+        <Settings />
+      ) : showAnalytics ? (
         <Analytics />
       ) : (
         <HabitGrid habits={habits} />

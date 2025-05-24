@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 from typing import List, Dict, Any
 from app.models.habit import Habit, HabitEntry
+from app.services.habit_config_service import HabitConfigService
 from datetime import datetime, date
 import re
 
@@ -10,6 +11,7 @@ class ExcelService:
     def __init__(self, data_path: str):
         self.data_path = Path(data_path)
         self.data_path.mkdir(exist_ok=True)
+        self.config_service = HabitConfigService()
     
     def find_excel_files(self) -> List[Path]:
         """Find all Excel files in the data directory"""
@@ -38,13 +40,18 @@ class ExcelService:
             habits = []
             entries = []
             
+            # Load saved configuration
+            saved_config = self.config_service.load_config()
+            
             for i, col in enumerate(habit_columns):
+                habit_id = f"habit_{col}"  # Use column name as ID for consistency
+                
                 # Detect personal habits (🔒 prefix or contains "Personal")
                 is_personal = col.startswith('🔒') or 'personal' in col.lower()
                 
                 # Smart emoji mapping based on habit name (from old app logic)
-                emoji = self._get_smart_emoji(col)
-                name = col.replace('🔒 ', '').strip()  # Remove lock emoji from display name
+                default_emoji = self._get_smart_emoji(col)
+                default_name = col.replace('🔒 ', '').strip()  # Remove lock emoji from display name
                 
                 # Determine habit type based on values
                 sample_values = df[col].dropna().head(10)
@@ -54,18 +61,44 @@ class ExcelService:
                 if len(sample_values) == 0:
                     continue
                 
-                habit_id = f"habit_{i}"
-                habit = Habit(
-                    id=habit_id,
-                    name=name,
-                    emoji=emoji,
-                    habit_type=habit_type,
-                    order=i,
-                    current_streak=0,
-                    best_streak=0,
-                    completed_today=False,
-                    is_personal=is_personal
-                )
+                # Use saved config or create default
+                if habit_id in saved_config:
+                    config = saved_config[habit_id]
+                    # Skip if marked as inactive
+                    if not config.active:
+                        continue
+                    
+                    habit = Habit(
+                        id=habit_id,
+                        name=config.name,
+                        emoji=config.emoji,
+                        habit_type=habit_type,
+                        order=config.order,
+                        current_streak=0,
+                        best_streak=0,
+                        completed_today=False,
+                        is_personal=config.is_personal
+                    )
+                else:
+                    # Create default config and save it
+                    default_config = self.config_service.create_default_config(
+                        habit_id, default_name, default_emoji, i, is_personal
+                    )
+                    saved_config[habit_id] = default_config
+                    self.config_service.save_config(saved_config)
+                    
+                    habit = Habit(
+                        id=habit_id,
+                        name=default_name,
+                        emoji=default_emoji,
+                        habit_type=habit_type,
+                        order=i,
+                        current_streak=0,
+                        best_streak=0,
+                        completed_today=False,
+                        is_personal=is_personal
+                    )
+                
                 habits.append(habit)
                 
                 # Process entries for this habit

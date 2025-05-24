@@ -1,13 +1,14 @@
 'use client'
 
-import { RefreshCw, BarChart3 } from 'lucide-react'
+import { RefreshCw, BarChart3, Settings } from 'lucide-react'
 import { useHabitStore } from '@/stores/habitStore'
 
 interface HeaderProps {
   onToggleAnalytics: () => void
+  onToggleSettings: () => void
 }
 
-export function Header({ onToggleAnalytics }: HeaderProps) {
+export function Header({ onToggleAnalytics, onToggleSettings }: HeaderProps) {
   const { refreshHabits, loading } = useHabitStore()
   
   const handleRefresh = async () => {
@@ -30,6 +31,14 @@ export function Header({ onToggleAnalytics }: HeaderProps) {
             >
               <BarChart3 className="h-4 w-4" />
               Analytics
+            </button>
+            
+            <button
+              onClick={onToggleSettings}
+              className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-accent"
+            >
+              <Settings className="h-4 w-4" />
+              Settings
             </button>
             
             <button
