@@ -1,10 +1,12 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { motion } from 'framer-motion'
 import { HabitGrid } from '@/components/HabitGrid'
 import { Header } from '@/components/Header'
 import { Analytics } from '@/components/Analytics'
 import { Settings } from '@/components/Settings'
+import { LoadingSkeleton } from '@/components/LoadingSkeleton'
 import { useHabitStore } from '@/stores/habitStore'
 import type { Habit } from '@/types/habit'
 
@@ -18,11 +20,7 @@ export default function Home() {
   }, [])
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-lg text-muted-foreground">Loading habits...</div>
-      </div>
-    )
+    return <LoadingSkeleton />
   }
 
   if (error) {
@@ -49,25 +47,65 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header 
-        onToggleAnalytics={() => {
-          setShowAnalytics(!showAnalytics)
-          setShowSettings(false)
-        }}
-        onToggleSettings={() => {
-          setShowSettings(!showSettings)
-          setShowAnalytics(false)
-        }}
-      />
+    <div className="min-h-screen relative overflow-hidden">
+      {/* Animated cosmic background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_40%,rgba(139,92,246,0.15),transparent_70%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_20%,rgba(6,182,212,0.1),transparent_50%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_80%,rgba(16,185,129,0.1),transparent_50%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_70%,rgba(236,72,153,0.08),transparent_60%)]" />
+      </div>
+
+      {/* Floating cosmic particles */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {[...Array(15)].map((_, i) => (
+          <motion.div
+            key={i}
+            className="absolute w-1 h-1 bg-white/30 rounded-full"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+            }}
+            animate={{
+              y: [-20, -80, -20],
+              x: [0, 30, 0],
+              opacity: [0, 1, 0],
+              scale: [0, 1, 0],
+            }}
+            transition={{
+              duration: 4 + Math.random() * 2,
+              repeat: Infinity,
+              delay: Math.random() * 3,
+              ease: "easeInOut",
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Mesh gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/50 via-transparent to-slate-950/30 pointer-events-none" />
       
-      {showSettings ? (
-        <Settings />
-      ) : showAnalytics ? (
-        <Analytics />
-      ) : (
-        <HabitGrid habits={habits} />
-      )}
+      {/* Content */}
+      <div className="relative z-10">
+        <Header 
+          onToggleAnalytics={() => {
+            setShowAnalytics(!showAnalytics)
+            setShowSettings(false)
+          }}
+          onToggleSettings={() => {
+            setShowSettings(!showSettings)
+            setShowAnalytics(false)
+          }}
+        />
+        
+        {showSettings ? (
+          <Settings />
+        ) : showAnalytics ? (
+          <Analytics />
+        ) : (
+          <HabitGrid habits={habits} />
+        )}
+      </div>
     </div>
   )
 }
