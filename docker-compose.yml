@@ -10,7 +10,7 @@ services:
     environment:
       - DATABASE_URL=sqlite:///./app.db
       - EXCEL_DATA_PATH=./data
-      - CORS_ORIGINS=http://localhost:3000
+      - CORS_ORIGINS=*
     restart: unless-stopped
 
   frontend:
