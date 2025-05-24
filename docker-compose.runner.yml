@@ -6,7 +6,7 @@ services:
     container_name: github-actions-runner-personal-logs-20
     environment:
       REPO_URL: https://github.com/Morawski21/personal-logs-20
-      RUNNER_TOKEN: ANDIVZAEVNPQASQSTMVZVOLIGIMPK
+      RUNNER_TOKEN: YOUR_NEW_TOKEN_HERE
       RUNNER_NAME: synology-runner-personal-logs-20
       RUNNER_WORKDIR: /tmp/runner/work
       RUNNER_GROUP: default
