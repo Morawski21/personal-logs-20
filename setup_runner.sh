@@ -9,7 +9,7 @@ echo "🛑 Stopping existing runner..."
 docker-compose -f docker-compose.runner.yml down 2>/dev/null || true
 
 # Start the new runner
-echo "🏃 Starting GitHub Actions Runner..."
+echo "Starting GitHub Actions Runner..."
 docker-compose -f docker-compose.runner.yml up -d
 
 # Check status
