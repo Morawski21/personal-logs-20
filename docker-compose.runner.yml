@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  github-runner:
+    image: myoung34/github-runner:latest
+    container_name: github-actions-runner-personal-logs-20
+    environment:
+      REPO_URL: https://github.com/Morawski21/personal-logs-20
+      RUNNER_TOKEN: ANDIVZAEVNPQASQSTMVZVOLIGIMPK
+      RUNNER_NAME: synology-runner-personal-logs-20
+      RUNNER_WORKDIR: /tmp/runner/work
+      RUNNER_GROUP: default
+      LABELS: linux,x64,synology
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - runner-tmp:/tmp/runner
+      - /usr/local/bin/docker:/usr/bin/docker:ro
+    restart: unless-stopped
+    privileged: true
+    networks:
+      - default
+
+volumes:
+  runner-tmp:
+
+networks:
+  default:
+    driver: bridge

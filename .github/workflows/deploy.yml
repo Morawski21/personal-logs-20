@@ -1,0 +1,80 @@
+name: Deploy to Synology
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, linux, x64, synology]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Create data directory
+      run: |
+        mkdir -p ./data
+        
+    - name: Copy Excel file if exists
+      run: |
+        if [ -f "/volume1/docker/personal-logs/data/Logbook 2025.xlsx" ]; then
+          cp "/volume1/docker/personal-logs/data/Logbook 2025.xlsx" ./data/
+          echo "✅ Copied existing Excel file"
+        else
+          echo "ℹ️ No existing Excel file found"
+        fi
+        
+    - name: Setup environment
+      run: |
+        SYNOLOGY_IP=$(hostname -I | awk '{print $1}')
+        cat > .env << EOF
+        # Backend Configuration
+        DATABASE_URL=sqlite:///./app.db
+        EXCEL_DATA_PATH=/app/data
+        CORS_ORIGINS=http://$SYNOLOGY_IP:3000
+        
+        # Frontend Configuration
+        NEXT_PUBLIC_API_URL=http://$SYNOLOGY_IP:8000
+        NEXT_PUBLIC_WS_URL=ws://$SYNOLOGY_IP:8000
+        EOF
+        echo "✅ Environment configured for IP: $SYNOLOGY_IP"
+        
+    - name: Stop existing containers
+      run: |
+        docker-compose down || true
+        echo "✅ Stopped existing containers"
+        
+    - name: Build and deploy
+      run: |
+        docker-compose up -d --build
+        echo "✅ Built and started containers"
+        
+    - name: Wait for services
+      run: |
+        echo "⏳ Waiting for services to start..."
+        sleep 20
+        
+    - name: Check deployment
+      run: |
+        if docker-compose ps | grep -q "Up"; then
+          echo "✅ Deployment successful!"
+          SYNOLOGY_IP=$(hostname -I | awk '{print $1}')
+          echo "🌐 Frontend: http://$SYNOLOGY_IP:3000"
+          echo "🔧 Backend: http://$SYNOLOGY_IP:8000"
+          echo "📖 API Docs: http://$SYNOLOGY_IP:8000/docs"
+          echo "📊 Container status:"
+          docker-compose ps
+        else
+          echo "❌ Deployment failed"
+          docker-compose logs
+          exit 1
+        fi
+        
+    - name: Cleanup old images
+      run: |
+        docker image prune -f
+        echo "✅ Cleaned up old images"
