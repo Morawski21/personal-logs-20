@@ -54,11 +54,10 @@ export function Settings() {
       })
 
       if (response.ok) {
-        // Update local state
         setEditableHabits(prev => 
           prev.map(h => h.id === habitId ? { ...h, ...updates } : h)
         )
-        await fetchHabits() // Refresh from server
+        await fetchHabits()
       } else {
         console.error('Failed to update habit')
       }
@@ -77,10 +76,9 @@ export function Settings() {
       })
 
       if (response.ok) {
-        // Remove from local state
         setEditableHabits(prev => prev.filter(h => h.id !== habitId))
-        await fetchHabits() // Refresh from server
-        await fetchHiddenHabits() // Refresh hidden habits
+        await fetchHabits()
+        await fetchHiddenHabits()
       } else {
         console.error('Failed to delete habit')
       }
@@ -99,8 +97,8 @@ export function Settings() {
       })
 
       if (response.ok) {
-        await fetchHabits() // Refresh active habits
-        await fetchHiddenHabits() // Refresh hidden habits
+        await fetchHabits()
+        await fetchHiddenHabits()
       } else {
         console.error('Failed to restore habit')
       }
@@ -191,118 +189,118 @@ export function Settings() {
         {/* Active Habits Tab */}
         {activeTab === 'active' && (
           <div className="space-y-4">
-          {editableHabits.map((habit, index) => (
-            <motion.div
-              key={habit.id}
-              className="bg-white/5 border border-white/20 rounded-xl p-6 backdrop-blur-sm"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: index * 0.05 }}
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4 flex-1">
-                  <GripVertical className="h-4 w-4 text-muted-foreground cursor-move" />
-                  
-                  {habit.isEditing ? (
-                    <div className="flex items-center gap-3 flex-1">
-                      <input
-                        type="text"
-                        value={habit.emoji}
-                        onChange={(e) => handleInputChange(habit.id, 'emoji', e.target.value)}
-                        className="w-12 text-center text-xl bg-background border border-border rounded px-2 py-1"
-                        maxLength={2}
-                      />
-                      <input
-                        type="text"
-                        value={habit.name}
-                        onChange={(e) => handleInputChange(habit.id, 'name', e.target.value)}
-                        className="flex-1 bg-background border border-border rounded px-3 py-2"
-                      />
-                      <label className="flex items-center gap-2 cursor-pointer">
+            {editableHabits.map((habit, index) => (
+              <motion.div
+                key={habit.id}
+                className="bg-white/5 border border-white/20 rounded-xl p-6 backdrop-blur-sm"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: index * 0.05 }}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4 flex-1">
+                    <GripVertical className="h-4 w-4 text-white/40 cursor-move" />
+                    
+                    {habit.isEditing ? (
+                      <div className="flex items-center gap-3 flex-1">
                         <input
-                          type="checkbox"
-                          checked={habit.is_personal}
-                          onChange={(e) => handleInputChange(habit.id, 'is_personal', e.target.checked)}
-                          className="rounded"
+                          type="text"
+                          value={habit.emoji}
+                          onChange={(e) => handleInputChange(habit.id, 'emoji', e.target.value)}
+                          className="w-12 text-center text-xl bg-white/10 border border-white/30 rounded px-2 py-1 text-white"
+                          maxLength={2}
                         />
-                        <span className="text-sm text-muted-foreground">Personal</span>
-                      </label>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-4 flex-1">
-                      <span className="text-2xl">{habit.emoji}</span>
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-white/90">{habit.name}</h3>
-                        <div className="flex items-center gap-2 text-sm text-white/60">
-                          <span>{habit.habit_type}</span>
-                          {habit.is_personal && (
-                            <div className="flex items-center gap-1">
-                              <EyeOff className="h-3 w-3" />
-                              <span>Personal</span>
-                            </div>
-                          )}
+                        <input
+                          type="text"
+                          value={habit.name}
+                          onChange={(e) => handleInputChange(habit.id, 'name', e.target.value)}
+                          className="flex-1 bg-white/10 border border-white/30 rounded px-3 py-2 text-white"
+                        />
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={habit.is_personal}
+                            onChange={(e) => handleInputChange(habit.id, 'is_personal', e.target.checked)}
+                            className="rounded"
+                          />
+                          <span className="text-sm text-white/70">Personal</span>
+                        </label>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-4 flex-1">
+                        <span className="text-2xl">{habit.emoji}</span>
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-white/90">{habit.name}</h3>
+                          <div className="flex items-center gap-2 text-sm text-white/60">
+                            <span>{habit.habit_type}</span>
+                            {habit.is_personal && (
+                              <div className="flex items-center gap-1">
+                                <EyeOff className="h-3 w-3" />
+                                <span>Personal</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-sm font-medium text-white/90">
+                            {habit.current_streak}d streak
+                          </div>
+                          <div className="text-xs text-white/60">
+                            Best: {habit.best_streak}d
+                          </div>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <div className="text-sm font-medium text-white/90">
-                          {habit.current_streak}d streak
-                        </div>
-                        <div className="text-xs text-white/60">
-                          Best: {habit.best_streak}d
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
+                  
+                  <div className="flex items-center gap-2 ml-4">
+                    {habit.isEditing ? (
+                      <>
+                        <button
+                          onClick={() => saveChanges(habit)}
+                          disabled={saving}
+                          className="flex items-center gap-1 px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700 disabled:opacity-50"
+                        >
+                          <Save className="h-3 w-3" />
+                          Save
+                        </button>
+                        <button
+                          onClick={() => toggleEdit(habit.id)}
+                          className="px-3 py-1 bg-gray-600 text-white rounded text-sm hover:bg-gray-700"
+                        >
+                          Cancel
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => toggleEdit(habit.id)}
+                          className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => deleteHabit(habit.id)}
+                          disabled={saving}
+                          className="flex items-center gap-1 px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700 disabled:opacity-50"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                          Hide
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
-                
-                <div className="flex items-center gap-2 ml-4">
-                  {habit.isEditing ? (
-                    <>
-                      <button
-                        onClick={() => saveChanges(habit)}
-                        disabled={saving}
-                        className="flex items-center gap-1 px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700 disabled:opacity-50"
-                      >
-                        <Save className="h-3 w-3" />
-                        Save
-                      </button>
-                      <button
-                        onClick={() => toggleEdit(habit.id)}
-                        className="px-3 py-1 bg-gray-600 text-white rounded text-sm hover:bg-gray-700"
-                      >
-                        Cancel
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <button
-                        onClick={() => toggleEdit(habit.id)}
-                        className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => deleteHabit(habit.id)}
-                        disabled={saving}
-                        className="flex items-center gap-1 px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700 disabled:opacity-50"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                        Hide
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
-            </motion.div>
-          ))}
-          </div>
+              </motion.div>
+            ))}
 
-          {editableHabits.length === 0 && (
-            <div className="text-center text-white/60 py-12">
-              <p className="text-lg">No active habits to configure</p>
-              <p className="text-sm mt-2">Add habits to your Excel file to see them here</p>
-            </div>
-          )}
+            {editableHabits.length === 0 && (
+              <div className="text-center text-white/60 py-12">
+                <p className="text-lg">No active habits to configure</p>
+                <p className="text-sm mt-2">Add habits to your Excel file to see them here</p>
+              </div>
+            )}
+          </div>
         )}
 
         {/* Hidden Habits Tab */}

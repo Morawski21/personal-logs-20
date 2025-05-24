@@ -8,6 +8,49 @@ from app.core.config import settings
 router = APIRouter()
 excel_service = ExcelService(settings.EXCEL_DATA_PATH)
 
+def calculate_perfect_days_streak(entries, habits):
+    """Calculate the longest streak of perfect days (all habits completed)"""
+    if not entries or not habits:
+        return 0
+    
+    # Group entries by date
+    entries_by_date = {}
+    for entry in entries:
+        date_str = entry.date.strftime('%Y-%m-%d')
+        if date_str not in entries_by_date:
+            entries_by_date[date_str] = {}
+        entries_by_date[date_str][entry.habit_id] = entry.completed
+    
+    # Get all trackable habit IDs (excluding description types)
+    trackable_habits = [h.id for h in habits if h.habit_type in ['binary', 'time']]
+    
+    if not trackable_habits:
+        return 0
+    
+    # Sort dates
+    sorted_dates = sorted(entries_by_date.keys())
+    
+    current_streak = 0
+    best_streak = 0
+    
+    for date in sorted_dates:
+        day_entries = entries_by_date[date]
+        
+        # Check if ALL trackable habits were completed this day
+        all_completed = True
+        for habit_id in trackable_habits:
+            if habit_id not in day_entries or not day_entries[habit_id]:
+                all_completed = False
+                break
+        
+        if all_completed:
+            current_streak += 1
+            best_streak = max(best_streak, current_streak)
+        else:
+            current_streak = 0
+    
+    return best_streak
+
 @router.get("/")
 def get_analytics() -> Dict[str, Any]:
     """Get analytics data"""
@@ -23,29 +66,31 @@ def get_analytics() -> Dict[str, Any]:
         
         streaks = excel_service.calculate_streaks(all_entries)
         
+        # Calculate perfect days streak (days where ALL habits were completed)
+        perfect_days_streak = calculate_perfect_days_streak(all_entries, all_habits)
+        
         # Calculate analytics
         total_habits = len(all_habits)
         active_streaks = sum(1 for streak in streaks.values() if streak['current_streak'] > 0)
-        longest_streak = max((streak['best_streak'] for streak in streaks.values()), default=0)
         completed_today = sum(1 for streak in streaks.values() if streak['completed_today'])
         
         return {
             "total_habits": total_habits,
             "active_streaks": active_streaks,
-            "longest_streak": longest_streak,
+            "perfect_days_streak": perfect_days_streak,
             "completed_today": completed_today,
             "completion_rate": (completed_today / total_habits * 100) if total_habits > 0 else 0
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error loading analytics: {str(e)}")
 
-@router.get("/weekly-chart")
-def get_weekly_chart() -> Dict[str, Any]:
-    """Get weekly chart data for last 7 days"""
+@router.get("/productivity-chart")
+def get_productivity_chart() -> Dict[str, Any]:
+    """Get productivity chart data by categories for last 7 days"""
     try:
         excel_files = excel_service.find_excel_files()
         if not excel_files:
-            return {"chart_data": []}
+            return {"chart_data": [], "categories": []}
         
         # Parse Excel file
         file_path = excel_files[0]  # Use first Excel file
@@ -55,8 +100,17 @@ def get_weekly_chart() -> Dict[str, Any]:
         date_col = df.columns[0]
         df[date_col] = pd.to_datetime(df[date_col]).dt.date
         
-        # Get time-based habits (like the original app)
-        time_habits = []
+        # Define productivity categories based on original app
+        productivity_categories = {
+            "Tech": ["Tech", "Praca"],  # Combine Tech + Praca
+            "YouTube": ["YouTube"],
+            "Czytanie": ["Czytanie"],
+            "Gitara": ["Gitara"], 
+            "Inne": ["Inne"]
+        }
+        
+        # Get time-based columns that match our categories
+        available_columns = []
         for col in df.columns:
             if col != date_col and col not in {'WEEKDAY', 'Razem', 'Unnamed: 8', 'Unnamed: 18'} and not col.startswith('Unnamed'):
                 # Check if it's a time-based habit
@@ -65,7 +119,7 @@ def get_weekly_chart() -> Dict[str, Any]:
                     try:
                         numeric_values = pd.to_numeric(sample_values, errors='coerce')
                         if not numeric_values.isna().all() and numeric_values.max() > 10:
-                            time_habits.append(col)
+                            available_columns.append(col)
                     except:
                         pass
         
@@ -78,6 +132,8 @@ def get_weekly_chart() -> Dict[str, Any]:
         
         # Prepare chart data
         chart_data = []
+        categories_used = set()
+        
         for _, row in df_filtered.iterrows():
             day_data = {
                 "date": row[date_col].strftime("%Y-%m-%d"),
@@ -85,24 +141,41 @@ def get_weekly_chart() -> Dict[str, Any]:
                 "total": 0
             }
             
-            # Add each time habit
-            for habit in time_habits:
-                if habit in row and pd.notna(row[habit]):
-                    try:
-                        value = float(row[habit])
-                        day_data[habit] = value
-                        day_data["total"] += value
-                    except (ValueError, TypeError):
-                        day_data[habit] = 0
+            # Calculate totals by category
+            for category, columns in productivity_categories.items():
+                category_total = 0
+                
+                for col in columns:
+                    if col in available_columns and col in row and pd.notna(row[col]):
+                        try:
+                            value = float(row[col])
+                            category_total += value
+                        except (ValueError, TypeError):
+                            pass
+                
+                if category_total > 0:
+                    categories_used.add(category)
+                    day_data[category] = category_total
+                    day_data["total"] += category_total
                 else:
-                    day_data[habit] = 0
+                    day_data[category] = 0
             
             chart_data.append(day_data)
         
+        # Define colors for each category
+        category_colors = {
+            "Tech": "#8b5cf6",      # Purple
+            "YouTube": "#ef4444",   # Red  
+            "Czytanie": "#10b981",  # Emerald
+            "Gitara": "#f59e0b",    # Amber
+            "Inne": "#06b6d4"       # Cyan
+        }
+        
         return {
             "chart_data": chart_data,
-            "habits": time_habits
+            "categories": list(categories_used),
+            "category_colors": category_colors
         }
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error loading chart data: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error loading productivity chart: {str(e)}")
