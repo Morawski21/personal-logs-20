@@ -27,7 +27,7 @@ export function Header({ onToggleAnalytics, onToggleSettings }: HeaderProps) {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8 }}
             >
-              Modern Habit Tracker
+              Personal Logs
             </motion.h1>
             <motion.p 
               className="text-sm text-white/60"
@@ -80,7 +80,7 @@ export function Header({ onToggleAnalytics, onToggleSettings }: HeaderProps) {
       </div>
       
       {/* Subtle glow effect */}
-      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-purple-500/5 to-transparent opacity-50" />
+      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-purple-500/5 to-transparent opacity-50 pointer-events-none" />
     </header>
   )
 }

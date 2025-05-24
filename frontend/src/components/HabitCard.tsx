@@ -227,12 +227,15 @@ export function HabitCard({ habit, className }: HabitCardProps) {
           )}
         </motion.div>
         
-        <div className="flex-1">
+        <div className="flex-1 relative">
+          {habit.is_personal && !isRevealed && (
+            <div className="absolute inset-0 bg-gradient-to-r from-purple-600/30 to-pink-600/30 backdrop-blur-sm rounded-lg z-10" />
+          )}
           <h3 className={cn(
-            "text-lg font-bold bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent",
-            habit.is_personal && !isRevealed && "blur-sm select-none"
+            "text-lg font-bold bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent relative",
+            habit.is_personal && !isRevealed && "blur-2xl select-none filter saturate-0"
           )}>
-            {habit.name}
+            {habit.is_personal && !isRevealed ? "████████" : habit.name}
           </h3>
           
           {/* Status indicator */}
