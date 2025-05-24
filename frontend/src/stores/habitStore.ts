@@ -24,12 +24,22 @@ export const useHabitStore = create<HabitStore>((set, get) => ({
     try {
       const response = await fetch(`${API_BASE_URL}/api/habits/`)
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
+        const errorMessage = `Backend API error (${response.status}): ${response.statusText}`
+        throw new Error(errorMessage)
       }
       const habits = await response.json()
       set({ habits, loading: false })
     } catch (error) {
-      set({ error: error instanceof Error ? error.message : 'Unknown error', loading: false })
+      let errorMessage = 'Unknown error occurred'
+      
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        errorMessage = `Cannot connect to backend API at ${API_BASE_URL}. Check if backend is running and accessible.`
+      } else if (error instanceof Error) {
+        errorMessage = error.message
+      }
+      
+      console.error('Fetch habits error:', error)
+      set({ error: errorMessage, loading: false })
     }
   },
 
