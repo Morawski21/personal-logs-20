@@ -100,16 +100,7 @@ def get_productivity_chart() -> Dict[str, Any]:
         date_col = df.columns[0]
         df[date_col] = pd.to_datetime(df[date_col]).dt.date
         
-        # Define productivity categories based on original app
-        productivity_categories = {
-            "Tech": ["Tech", "Praca"],  # Combine Tech + Praca
-            "YouTube": ["YouTube"],
-            "Czytanie": ["Czytanie"],
-            "Gitara": ["Gitara"], 
-            "Inne": ["Inne"]
-        }
-        
-        # Get time-based columns that match our categories
+        # Get ALL time-based columns first
         available_columns = []
         for col in df.columns:
             if col != date_col and col not in {'WEEKDAY', 'Razem', 'Unnamed: 8', 'Unnamed: 18'} and not col.startswith('Unnamed'):
@@ -122,6 +113,37 @@ def get_productivity_chart() -> Dict[str, Any]:
                             available_columns.append(col)
                     except:
                         pass
+        
+        print(f"Available columns: {available_columns}")  # Debug log
+        
+        # Define productivity categories based on what's actually in Excel
+        productivity_categories = {}
+        
+        # Check each possible category against available columns
+        for col in available_columns:
+            col_lower = col.lower()
+            if 'tech' in col_lower or 'praca' in col_lower:
+                if "Tech" not in productivity_categories:
+                    productivity_categories["Tech"] = []
+                productivity_categories["Tech"].append(col)
+            elif 'youtube' in col_lower:
+                if "YouTube" not in productivity_categories:
+                    productivity_categories["YouTube"] = []
+                productivity_categories["YouTube"].append(col)
+            elif 'czytanie' in col_lower or 'reading' in col_lower:
+                if "Czytanie" not in productivity_categories:
+                    productivity_categories["Czytanie"] = []
+                productivity_categories["Czytanie"].append(col)
+            elif 'gitara' in col_lower or 'guitar' in col_lower:
+                if "Gitara" not in productivity_categories:
+                    productivity_categories["Gitara"] = []
+                productivity_categories["Gitara"].append(col)
+            elif 'inne' in col_lower or 'other' in col_lower:
+                if "Inne" not in productivity_categories:
+                    productivity_categories["Inne"] = []
+                productivity_categories["Inne"].append(col)
+        
+        print(f"Productivity categories: {productivity_categories}")  # Debug log
         
         # Get last 7 days
         today = datetime.now().date()
@@ -144,19 +166,25 @@ def get_productivity_chart() -> Dict[str, Any]:
             # Calculate totals by category
             for category, columns in productivity_categories.items():
                 category_total = 0
+                category_debug = []
                 
                 for col in columns:
                     if col in available_columns and col in row and pd.notna(row[col]):
                         try:
                             value = float(row[col])
                             category_total += value
+                            category_debug.append(f"{col}:{value}")
                         except (ValueError, TypeError):
+                            category_debug.append(f"{col}:error")
                             pass
+                    else:
+                        category_debug.append(f"{col}:missing/na")
                 
                 if category_total > 0:
                     categories_used.add(category)
                     day_data[category] = category_total
                     day_data["total"] += category_total
+                    print(f"Day {day_data['date']} - {category}: {category_total} ({', '.join(category_debug)})")
                 else:
                     day_data[category] = 0
             
@@ -173,8 +201,11 @@ def get_productivity_chart() -> Dict[str, Any]:
         
         return {
             "chart_data": chart_data,
-            "categories": list(categories_used),
-            "category_colors": category_colors
+            "categories": list(productivity_categories.keys()),  # Return all defined categories
+            "categories_used": list(categories_used),  # Categories with actual data
+            "category_colors": category_colors,
+            "available_columns": available_columns,  # Debug info
+            "productivity_categories": productivity_categories  # Debug info
         }
         
     except Exception as e:
