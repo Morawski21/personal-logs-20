@@ -7,6 +7,8 @@ services:
       dockerfile: backend/Dockerfile
     ports:
       - "8000:8000"
+    volumes:
+      - /volume1/personal-logs-20/data:/app/data
     environment:
       - DATABASE_URL=sqlite:///./app.db
       - EXCEL_DATA_PATH=./data
