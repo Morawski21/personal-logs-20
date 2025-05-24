@@ -15,9 +15,19 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
       
-    - name: Create data directory
+    - name: Create data directory and copy Excel file
       run: |
         mkdir -p ./data
+        # Copy Excel file if exists from previous deployment
+        if [ -f "/volume1/docker/personal-logs/data/Logbook 2025.xlsx" ]; then
+          cp "/volume1/docker/personal-logs/data/Logbook 2025.xlsx" ./data/
+          echo "✅ Copied existing Excel file"
+        elif [ -f "/volume1/docker/personal-logs-20/data/Logbook 2025.xlsx" ]; then
+          cp "/volume1/docker/personal-logs-20/data/Logbook 2025.xlsx" ./data/
+          echo "✅ Copied existing Excel file from current deployment"
+        else
+          echo "ℹ️ No existing Excel file found - please add your Excel file to the data directory"
+        fi
         
     - name: Copy Excel file if exists
       run: |
