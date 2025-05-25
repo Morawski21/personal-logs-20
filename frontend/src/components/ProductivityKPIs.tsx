@@ -37,18 +37,26 @@ export function ProductivityKPIs() {
 
   const fetchData = async () => {
     try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+      console.log('Fetching from API URL:', apiUrl) // Debug log
+      
       const [metricsResponse, chartResponse] = await Promise.all([
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/analytics/productivity-metrics`),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/analytics/productivity-chart-30days`)
+        fetch(`${apiUrl}/api/analytics/productivity-metrics`),
+        fetch(`${apiUrl}/api/analytics/productivity-chart-30days`)
       ])
+
+      console.log('Metrics response status:', metricsResponse.status) // Debug log
+      console.log('Chart response status:', chartResponse.status) // Debug log
 
       if (metricsResponse.ok) {
         const metricsData = await metricsResponse.json()
+        console.log('Metrics data:', metricsData) // Debug log
         setMetrics(metricsData)
       }
 
       if (chartResponse.ok) {
         const chartData = await chartResponse.json()
+        console.log('Chart data:', chartData) // Debug log
         setChartData(chartData)
       }
     } catch (error) {
@@ -76,13 +84,8 @@ export function ProductivityKPIs() {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-center text-white/60">Loading productivity insights...</div>
-      </div>
-    )
-  }
+  // Always show the component, even if loading
+  console.log('ProductivityKPIs render - loading:', loading, 'metrics:', metrics, 'chartData:', chartData) // Debug log
 
   const maxTotal = chartData ? Math.max(...chartData.chart_data.map(d => d.total), 1) : 1
 
@@ -93,8 +96,16 @@ export function ProductivityKPIs() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
+      {/* Debug Header - Always visible */}
+      <div className="mb-4 p-4 bg-red-500/20 border border-red-500/30 rounded-lg">
+        <h2 className="text-white font-bold">🚧 ProductivityKPIs Component Loaded!</h2>
+        <p className="text-white/80 text-sm">Loading: {loading ? 'Yes' : 'No'} | Metrics: {metrics ? 'Loaded' : 'None'} | Chart: {chartData ? 'Loaded' : 'None'}</p>
+      </div>
+
       {/* KPIs Section */}
-      {metrics && (
+      {loading ? (
+        <div className="text-center text-white/60 py-8">Loading productivity insights...</div>
+      ) : metrics ? (
         <div className="mb-8">
           <motion.div
             className="mb-6"
@@ -184,6 +195,10 @@ export function ProductivityKPIs() {
               </div>
             </motion.div>
           </div>
+        </div>
+      ) : (
+        <div className="text-center text-white/60 py-8">
+          No productivity metrics available
         </div>
       )}
 
