@@ -1,15 +1,17 @@
 'use client'
 
-import { RefreshCw, BarChart3, Settings } from 'lucide-react'
+import { RefreshCw, BarChart3, Settings, Bug } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useHabitStore } from '@/stores/habitStore'
 
 interface HeaderProps {
   onToggleAnalytics: () => void
   onToggleSettings: () => void
+  onToggleDebug: () => void
+  debugMode: boolean
 }
 
-export function Header({ onToggleAnalytics, onToggleSettings }: HeaderProps) {
+export function Header({ onToggleAnalytics, onToggleSettings, onToggleDebug, debugMode }: HeaderProps) {
   const { refreshHabits, loading } = useHabitStore()
   
   const handleRefresh = async () => {
@@ -45,6 +47,21 @@ export function Header({ onToggleAnalytics, onToggleSettings }: HeaderProps) {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
           >
+            {/* Debug Toggle - Small square button */}
+            <motion.button
+              onClick={onToggleDebug}
+              className={`p-2 text-sm font-medium transition-all duration-300 rounded-lg backdrop-blur-sm border ${
+                debugMode 
+                  ? 'bg-orange-500/30 text-orange-200 border-orange-400/50' 
+                  : 'bg-white/5 text-white/60 hover:text-white/80 border-white/10 hover:border-white/20'
+              }`}
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              title="Toggle Debug Mode"
+            >
+              <Bug className="h-3 w-3" />
+            </motion.button>
+            
             <motion.button
               onClick={onToggleAnalytics}
               className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white/80 hover:text-white transition-all duration-300 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 hover:border-white/30"

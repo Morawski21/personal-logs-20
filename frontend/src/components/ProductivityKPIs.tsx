@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import { TrendingUp, BarChart3, Clock, Target, Calendar, Award } from 'lucide-react'
+import { TrendingUp, Clock, Target } from 'lucide-react'
 
 interface ProductivityMetrics {
   avg_daily_productivity: number
@@ -13,22 +13,13 @@ interface ProductivityMetrics {
   total_productive_hours_change: number
 }
 
-interface ChartData {
-  date: string
-  weekday: string
-  total: number
-  [key: string]: any
+
+interface ProductivityKPIsProps {
+  debugMode?: boolean
 }
 
-interface ProductivityChartData {
-  chart_data: ChartData[]
-  categories: string[]
-  category_colors: { [key: string]: string }
-}
-
-export function ProductivityKPIs() {
+export function ProductivityKPIs({ debugMode = false }: ProductivityKPIsProps) {
   const [metrics, setMetrics] = useState<ProductivityMetrics | null>(null)
-  const [chartData, setChartData] = useState<ProductivityChartData | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -38,26 +29,22 @@ export function ProductivityKPIs() {
   const fetchData = async () => {
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-      console.log('Fetching from API URL:', apiUrl) // Debug log
+      if (debugMode) {
+        console.log('Fetching productivity metrics from API URL:', apiUrl)
+      }
       
-      const [metricsResponse, chartResponse] = await Promise.all([
-        fetch(`${apiUrl}/api/analytics/productivity-metrics`),
-        fetch(`${apiUrl}/api/analytics/productivity-chart-30days`)
-      ])
+      const metricsResponse = await fetch(`${apiUrl}/api/analytics/productivity-metrics`)
 
-      console.log('Metrics response status:', metricsResponse.status) // Debug log
-      console.log('Chart response status:', chartResponse.status) // Debug log
+      if (debugMode) {
+        console.log('Metrics response status:', metricsResponse.status)
+      }
 
       if (metricsResponse.ok) {
         const metricsData = await metricsResponse.json()
-        console.log('Metrics data:', metricsData) // Debug log
+        if (debugMode) {
+          console.log('Metrics data:', metricsData)
+        }
         setMetrics(metricsData)
-      }
-
-      if (chartResponse.ok) {
-        const chartData = await chartResponse.json()
-        console.log('Chart data:', chartData) // Debug log
-        setChartData(chartData)
       }
     } catch (error) {
       console.error('Error fetching productivity data:', error)
@@ -67,12 +54,13 @@ export function ProductivityKPIs() {
   }
 
   const formatTime = (minutes: number) => {
-    if (minutes >= 60) {
-      const hours = Math.floor(minutes / 60)
-      const mins = minutes % 60
+    const roundedMinutes = Math.round(minutes)
+    if (roundedMinutes >= 60) {
+      const hours = Math.floor(roundedMinutes / 60)
+      const mins = roundedMinutes % 60
       return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`
     }
-    return `${minutes}m`
+    return `${roundedMinutes}m`
   }
 
   const formatChange = (change: number) => {
@@ -84,10 +72,10 @@ export function ProductivityKPIs() {
     }
   }
 
-  // Always show the component, even if loading
-  console.log('ProductivityKPIs render - loading:', loading, 'metrics:', metrics, 'chartData:', chartData) // Debug log
-
-  const maxTotal = chartData ? Math.max(...chartData.chart_data.map(d => d.total), 1) : 1
+  // Debug logging only in debug mode
+  if (debugMode) {
+    console.log('ProductivityKPIs render - loading:', loading, 'metrics:', metrics)
+  }
 
   return (
     <motion.div
@@ -96,11 +84,14 @@ export function ProductivityKPIs() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
-      {/* Debug Header - Always visible */}
-      <div className="mb-4 p-4 bg-red-500/20 border border-red-500/30 rounded-lg">
-        <h2 className="text-white font-bold">🚧 ProductivityKPIs Component Loaded!</h2>
-        <p className="text-white/80 text-sm">Loading: {loading ? 'Yes' : 'No'} | Metrics: {metrics ? 'Loaded' : 'None'} | Chart: {chartData ? 'Loaded' : 'None'}</p>
-      </div>
+      {/* Debug Header - Only visible in debug mode */}
+      {debugMode && (
+        <div className="mb-4 p-4 bg-orange-500/20 border border-orange-500/30 rounded-lg">
+          <h2 className="text-white font-bold">🐛 Debug: ProductivityKPIs Component</h2>
+          <p className="text-white/80 text-sm">Loading: {loading ? 'Yes' : 'No'} | Metrics: {metrics ? 'Loaded' : 'None'}</p>
+          <p className="text-white/70 text-xs mt-1">API URL: {process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}</p>
+        </div>
+      )}
 
       {/* KPIs Section */}
       {loading ? (
@@ -200,130 +191,6 @@ export function ProductivityKPIs() {
         <div className="text-center text-white/60 py-8">
           No productivity metrics available
         </div>
-      )}
-
-      {/* 30-Day Chart */}
-      {chartData && chartData.chart_data.length > 0 && (
-        <motion.div
-          className="bg-white/5 border border-white/10 rounded-xl p-6 backdrop-blur-sm"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-        >
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 bg-cyan-500/20 rounded-lg">
-              <BarChart3 className="h-5 w-5 text-cyan-300" />
-            </div>
-            <h3 className="text-xl font-semibold text-white/90">Last 30 Days</h3>
-          </div>
-
-          {/* Chart */}
-          <div className="relative">
-            <div className="flex items-end justify-between gap-1 h-48 px-2">
-              {chartData.chart_data.map((day, index) => {
-                const isNA = day.total === null || day.total === undefined
-                const height = isNA ? maxTotal * 0.8 : (day.total / maxTotal) * 100
-
-                return (
-                  <motion.div
-                    key={day.date}
-                    className="flex-1 flex flex-col items-center group max-w-3"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: index * 0.01 }}
-                  >
-                    {/* Bar */}
-                    <div className="relative flex flex-col-reverse w-full">
-                      {isNA ? (
-                        <motion.div
-                          className="w-full rounded-sm bg-slate-600/20 border border-slate-500/30"
-                          style={{ 
-                            height: `${height * 0.48}px`,
-                            minHeight: '2px',
-                            backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(148, 163, 184, 0.1) 2px, rgba(148, 163, 184, 0.1) 4px)'
-                          }}
-                          initial={{ height: 0 }}
-                          animate={{ height: `${height * 0.48}px` }}
-                          transition={{ duration: 0.8, delay: index * 0.01 }}
-                        />
-                      ) : (
-                        chartData.categories.map((category) => {
-                          const value = day[category] || 0
-                          const segmentHeight = maxTotal > 0 ? (value / maxTotal) * 48 : 0
-                          
-                          if (value === 0) return null
-                          
-                          return (
-                            <motion.div
-                              key={category}
-                              className="w-full rounded-sm relative overflow-hidden"
-                              style={{ 
-                                backgroundColor: chartData.category_colors[category] || '#64748b',
-                                height: `${segmentHeight}px`,
-                                minHeight: value > 0 ? '1px' : '0px',
-                                filter: 'saturate(0.7) brightness(0.9)'
-                              }}
-                              initial={{ height: 0 }}
-                              animate={{ height: `${segmentHeight}px` }}
-                              transition={{ duration: 0.8, delay: index * 0.01 }}
-                            />
-                          )
-                        })
-                      )}
-                      
-                      {/* Tooltip on hover */}
-                      <motion.div 
-                        className="absolute -top-12 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10"
-                        whileHover={{ y: -2 }}
-                      >
-                        <div className="bg-black/80 backdrop-blur-sm text-white text-xs px-2 py-1 rounded border border-white/20 whitespace-nowrap">
-                          {isNA ? 'No data' : `${formatTime(day.total)} - ${day.weekday}`}
-                        </div>
-                      </motion.div>
-                    </div>
-                  </motion.div>
-                )
-              })}
-            </div>
-            
-            {/* Y-axis labels */}
-            <div className="absolute left-0 top-0 h-48 flex flex-col justify-between py-1 -ml-12">
-              {[...Array(3)].map((_, i) => {
-                const value = Math.round((maxTotal * (2 - i)) / 2)
-                return (
-                  <div key={i} className="text-xs text-white/40">
-                    {formatTime(value)}
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-
-          {/* Legend */}
-          <div className="flex flex-wrap gap-3 justify-center mt-6 pt-4 border-t border-white/10">
-            {chartData.categories.map((category) => (
-              <div key={category} className="flex items-center gap-2">
-                <div 
-                  className="w-3 h-3 rounded-sm"
-                  style={{ 
-                    backgroundColor: chartData.category_colors[category] || '#64748b',
-                    filter: 'saturate(0.7) brightness(0.9)'
-                  }}
-                />
-                <span className="text-sm text-white/70">{category}</span>
-              </div>
-            ))}
-            <div className="flex items-center gap-2">
-              <div 
-                className="w-3 h-3 rounded-sm border border-slate-500/30"
-                style={{ 
-                  backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 1px, rgba(148, 163, 184, 0.2) 1px, rgba(148, 163, 184, 0.2) 2px)'
-                }}
-              />
-              <span className="text-sm text-white/70">No data</span>
-            </div>
-          </div>
-        </motion.div>
       )}
     </motion.div>
   )

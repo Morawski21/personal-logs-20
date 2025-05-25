@@ -5,6 +5,7 @@ import { motion } from 'framer-motion'
 import { Target, TrendingUp, Calendar, Award, BarChart3 } from 'lucide-react'
 import { useHabitStore } from '@/stores/habitStore'
 import { ProductivityChart } from './ProductivityChart'
+import { ProductivityChart30Days } from './ProductivityChart30Days'
 
 interface ChartData {
   date: string
@@ -144,7 +145,7 @@ export function Analytics() {
           </p>
         </motion.div>
         
-        {/* Productivity Chart */}
+        {/* Weekly Productivity Chart */}
         <motion.div
           className="bg-white/5 border border-white/20 rounded-xl p-6 mt-6 backdrop-blur-sm"
           initial={{ opacity: 0, y: 20 }}
@@ -169,6 +170,16 @@ export function Analytics() {
               <div className="text-white/60">No productivity data available</div>
             </div>
           )}
+        </motion.div>
+
+        {/* 30-Day Productivity Chart */}
+        <motion.div
+          className="mt-6"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.8 }}
+        >
+          <ProductivityChart30Days />
         </motion.div>
       </motion.div>
     </div>

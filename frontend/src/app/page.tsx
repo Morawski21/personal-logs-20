@@ -15,6 +15,7 @@ export default function Home() {
   const { habits, loading, error, fetchHabits } = useHabitStore()
   const [showAnalytics, setShowAnalytics] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
+  const [debugMode, setDebugMode] = useState(false)
 
   useEffect(() => {
     fetchHabits()
@@ -98,6 +99,8 @@ export default function Home() {
             setShowSettings(!showSettings)
             setShowAnalytics(false)
           }}
+          onToggleDebug={() => setDebugMode(!debugMode)}
+          debugMode={debugMode}
         />
         
         {showSettings ? (
@@ -107,7 +110,7 @@ export default function Home() {
         ) : (
           <>
             <HabitGrid habits={habits} />
-            <ProductivityKPIs />
+            <ProductivityKPIs debugMode={debugMode} />
           </>
         )}
       </div>
