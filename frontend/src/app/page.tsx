@@ -7,6 +7,7 @@ import { Header } from '@/components/Header'
 import { Analytics } from '@/components/Analytics'
 import { Settings } from '@/components/Settings'
 import { LoadingSkeleton } from '@/components/LoadingSkeleton'
+import { ProductivityKPIs } from '@/components/ProductivityKPIs'
 import { useHabitStore } from '@/stores/habitStore'
 import type { Habit } from '@/types/habit'
 
@@ -104,7 +105,10 @@ export default function Home() {
         ) : showAnalytics ? (
           <Analytics />
         ) : (
-          <HabitGrid habits={habits} />
+          <>
+            <HabitGrid habits={habits} />
+            <ProductivityKPIs />
+          </>
         )}
       </div>
     </div>

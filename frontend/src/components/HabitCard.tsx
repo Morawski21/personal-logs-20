@@ -197,10 +197,7 @@ export function HabitCard({ habit, className }: HabitCardProps) {
 
       {/* Personal Habit Effects */}
       {habit.is_personal && !isRevealed && (
-        <>
-          <Lock className="absolute top-4 right-4 h-5 w-5 text-purple-400 opacity-70 group-hover:opacity-100 transition-all duration-300 z-10" />
-          <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 to-pink-900/20 backdrop-blur-sm" />
-        </>
+        <Lock className="absolute top-4 right-4 h-5 w-5 text-purple-400 opacity-70 group-hover:opacity-100 transition-all duration-300 z-10" />
       )}
       
       {/* Header with enhanced emoji */}
