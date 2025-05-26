@@ -99,6 +99,7 @@ dist/
 
 # Docker
 .dockerignore
+docker-compose.runner.yml
 
 # Data files (but keep structure)
 backend/data/*.xlsx
