@@ -1,25 +1,19 @@
 version: '3.8'
 services:
   github-runner:
-    image: myoung34/github-runner:latest
+    image: tcardonne/github-runner:latest  # This image supports PAT
     container_name: github-runner
     environment:
-      RUNNER_TOKEN: "ANDIVZAWGHFPZ2Y3ZS6A6W3IK7ND2"
-      RUNNER_WORKDIR: "/tmp/github-runner"
-      RUNNER_ALLOW_RUNASROOT: "true"
-      ORG_RUNNER: "false"
-      REPO_URL: "https://github.com/Morawski21/personal-logs-20"
+      GITHUB_OWNER: "Morawski21"
+      GITHUB_REPOSITORY: "personal-logs-20" 
+      GITHUB_PAT: {PAT}
+      RUNNER_LABELS: "linux,x64,synology,docker"
       RUNNER_NAME: "synology-runner"
-      LABELS: "linux,x64,synology,docker"
     volumes:
-      - /volume1/docker/docker.sock:/var/run/docker.sock
-      - /volume1/docker/github-runner:/tmp/github-runner
-      - /usr/local/bin/docker:/usr/bin/docker:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+      - runner-data:/home/runner
     restart: unless-stopped
     privileged: true
 
-volumes: {}
-
-networks:
-  default:
-    driver: bridge
+volumes:
+  runner-data:

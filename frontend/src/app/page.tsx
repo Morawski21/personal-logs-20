@@ -8,6 +8,8 @@ import { Analytics } from '@/components/Analytics'
 import { Settings } from '@/components/Settings'
 import { LoadingSkeleton } from '@/components/LoadingSkeleton'
 import { ProductivityKPIs } from '@/components/ProductivityKPIs'
+import { DailyInsights } from '@/components/DailyInsights'
+import { StreakNotifications } from '@/components/StreakNotifications'
 import { useHabitStore } from '@/stores/habitStore'
 import type { Habit } from '@/types/habit'
 
@@ -109,10 +111,14 @@ export default function Home() {
           <Analytics />
         ) : (
           <>
+            <DailyInsights habits={habits} />
             <HabitGrid habits={habits} />
             <ProductivityKPIs debugMode={debugMode} />
           </>
         )}
+        
+        {/* Streak Notifications */}
+        <StreakNotifications habits={habits} />
       </div>
     </div>
   )

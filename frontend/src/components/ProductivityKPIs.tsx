@@ -33,7 +33,17 @@ export function ProductivityKPIs({ debugMode = false }: ProductivityKPIsProps) {
         console.log('Fetching productivity metrics from API URL:', apiUrl)
       }
       
-      const metricsResponse = await fetch(`${apiUrl}/api/analytics/productivity-metrics`)
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 10000) // 10s timeout
+      
+      const metricsResponse = await fetch(`${apiUrl}/api/analytics/productivity-metrics`, {
+        signal: controller.signal,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      clearTimeout(timeoutId)
 
       if (debugMode) {
         console.log('Metrics response status:', metricsResponse.status)
@@ -44,10 +54,25 @@ export function ProductivityKPIs({ debugMode = false }: ProductivityKPIsProps) {
         if (debugMode) {
           console.log('Metrics data:', metricsData)
         }
-        setMetrics(metricsData)
+        
+        // Validate required fields
+        const requiredFields = ['avg_daily_productivity', 'max_daily_productivity', 'total_productive_hours']
+        const isValid = requiredFields.every(field => typeof metricsData[field] === 'number')
+        
+        if (isValid) {
+          setMetrics(metricsData)
+        } else {
+          console.warn('Invalid metrics data structure:', metricsData)
+        }
+      } else {
+        console.error('Failed to fetch productivity metrics:', metricsResponse.status, metricsResponse.statusText)
       }
     } catch (error) {
-      console.error('Error fetching productivity data:', error)
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.error('Request timeout: Productivity metrics took too long to load')
+      } else {
+        console.error('Error fetching productivity data:', error)
+      }
     } finally {
       setLoading(false)
     }

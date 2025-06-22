@@ -92,120 +92,108 @@ def get_productivity_chart() -> Dict[str, Any]:
         if not excel_files:
             return {"chart_data": [], "categories": []}
         
-        # Parse Excel file
+        # Parse Excel file using the existing ExcelService logic
         file_path = excel_files[0]  # Use first Excel file
-        df = pd.read_excel(file_path)
+        data = excel_service.parse_excel_file(file_path)
         
-        # Assume first column is date
-        date_col = df.columns[0]
-        df[date_col] = pd.to_datetime(df[date_col]).dt.date
+        # Get time-based habits from the parsed data
+        time_habits = [h for h in data['habits'] if h.habit_type == 'time']
         
-        # Get ALL time-based columns first
-        available_columns = []
-        for col in df.columns:
-            if col != date_col and col not in {'WEEKDAY', 'Razem', 'Unnamed: 8', 'Unnamed: 18'} and not col.startswith('Unnamed'):
-                # Check if it's a time-based habit
-                sample_values = df[col].dropna().head(10)
-                if not sample_values.empty:
-                    try:
-                        numeric_values = pd.to_numeric(sample_values, errors='coerce')
-                        if not numeric_values.isna().all() and numeric_values.max() > 10:
-                            available_columns.append(col)
-                    except:
-                        pass
+        if not time_habits:
+            return {"chart_data": [], "categories": []}
         
-        print(f"Available columns: {available_columns}")  # Debug log
+        print(f"Found {len(time_habits)} time-based habits")  # Debug log
         
-        # Define productivity categories based on what's actually in Excel
+        # Group habits into categories based on their names
         productivity_categories = {}
         
-        # Check each possible category against available columns
-        for col in available_columns:
-            col_lower = col.lower()
-            if 'tech' in col_lower or 'praca' in col_lower:
-                if "Tech" not in productivity_categories:
-                    productivity_categories["Tech"] = []
-                productivity_categories["Tech"].append(col)
-            elif 'youtube' in col_lower:
-                if "YouTube" not in productivity_categories:
-                    productivity_categories["YouTube"] = []
-                productivity_categories["YouTube"].append(col)
-            elif 'czytanie' in col_lower or 'reading' in col_lower:
-                if "Czytanie" not in productivity_categories:
-                    productivity_categories["Czytanie"] = []
-                productivity_categories["Czytanie"].append(col)
-            elif 'gitara' in col_lower or 'guitar' in col_lower:
-                if "Gitara" not in productivity_categories:
-                    productivity_categories["Gitara"] = []
-                productivity_categories["Gitara"].append(col)
-            elif 'inne' in col_lower or 'other' in col_lower:
-                if "Inne" not in productivity_categories:
-                    productivity_categories["Inne"] = []
-                productivity_categories["Inne"].append(col)
+        for habit in time_habits:
+            name_lower = habit.name.lower()
+            category = "Other"  # Default category
+            
+            # Smart categorization based on habit names
+            if any(keyword in name_lower for keyword in ['tech', 'work', 'praca', 'code', 'programming', 'dev']):
+                category = "Tech"
+            elif any(keyword in name_lower for keyword in ['youtube', 'video', 'entertainment']):
+                category = "YouTube"
+            elif any(keyword in name_lower for keyword in ['reading', 'book', 'czytanie', 'read']):
+                category = "Reading"
+            elif any(keyword in name_lower for keyword in ['guitar', 'music', 'gitara', 'instrument']):
+                category = "Music"
+            elif any(keyword in name_lower for keyword in ['exercise', 'gym', 'workout', 'sport', 'fitness']):
+                category = "Fitness"
+            elif any(keyword in name_lower for keyword in ['study', 'learn', 'course', 'education']):
+                category = "Learning"
+            
+            if category not in productivity_categories:
+                productivity_categories[category] = []
+            productivity_categories[category].append(habit)
         
-        print(f"Productivity categories: {productivity_categories}")  # Debug log
+        print(f"Productivity categories: {list(productivity_categories.keys())}")  # Debug log
         
-        # Get last 7 days
+        # Get last 7 days of entries
         today = datetime.now().date()
         week_ago = today - timedelta(days=6)
         
-        df_filtered = df[df[date_col] >= week_ago].copy()
-        df_filtered = df_filtered.sort_values(date_col)
+        # Filter entries to last 7 days
+        recent_entries = [e for e in data['entries'] 
+                         if e.date.date() >= week_ago and e.date.date() <= today]
         
-        # Prepare chart data
+        # Group entries by date
+        entries_by_date = {}
+        for entry in recent_entries:
+            date_key = entry.date.date()
+            if date_key not in entries_by_date:
+                entries_by_date[date_key] = {}
+            entries_by_date[date_key][entry.habit_id] = entry.value
+        
+        # Create complete date range for last 7 days
         chart_data = []
         categories_used = set()
         
-        for _, row in df_filtered.iterrows():
+        for i in range(7):
+            current_date = week_ago + timedelta(days=i)
             day_data = {
-                "date": row[date_col].strftime("%Y-%m-%d"),
-                "weekday": row[date_col].strftime("%a"),
+                "date": current_date.strftime("%Y-%m-%d"),
+                "weekday": current_date.strftime("%a"),
                 "total": 0
             }
             
+            day_entries = entries_by_date.get(current_date, {})
+            
             # Calculate totals by category
-            for category, columns in productivity_categories.items():
+            for category, habits in productivity_categories.items():
                 category_total = 0
-                category_debug = []
                 
-                for col in columns:
-                    if col in available_columns and col in row and pd.notna(row[col]):
-                        try:
-                            value = float(row[col])
-                            category_total += value
-                            category_debug.append(f"{col}:{value}")
-                        except (ValueError, TypeError):
-                            category_debug.append(f"{col}:error")
-                            pass
-                    else:
-                        category_debug.append(f"{col}:missing/na")
+                for habit in habits:
+                    habit_value = day_entries.get(habit.id, 0)
+                    if isinstance(habit_value, (int, float)) and habit_value > 0:
+                        category_total += habit_value
                 
                 if category_total > 0:
                     categories_used.add(category)
-                    day_data[category] = category_total
-                    day_data["total"] += category_total
-                    print(f"Day {day_data['date']} - {category}: {category_total} ({', '.join(category_debug)})")
-                else:
-                    day_data[category] = 0
+                
+                day_data[category] = category_total
+                day_data["total"] += category_total
             
             chart_data.append(day_data)
         
-        # Define colors for each category (matching original app colors)
+        # Define colors for each category
         category_colors = {
-            "Tech": "#21d3ed",      # Cyan/Blue - for work/tech 
-            "YouTube": "#ef4444",   # Red - for YouTube/entertainment
-            "Czytanie": "#10b981",  # Green - for reading
-            "Gitara": "#fbbf23",    # Yellow/Amber - for music/guitar  
-            "Inne": "#94a3b8"       # Gray/Slate - for misc/other
+            "Tech": "#3b82f6",      # Blue
+            "YouTube": "#ef4444",   # Red
+            "Reading": "#10b981",   # Green
+            "Music": "#f59e0b",     # Amber
+            "Fitness": "#8b5cf6",   # Purple
+            "Learning": "#06b6d4",  # Cyan
+            "Other": "#6b7280"      # Gray
         }
         
         return {
             "chart_data": chart_data,
-            "categories": list(productivity_categories.keys()),  # Return all defined categories
-            "categories_used": list(categories_used),  # Categories with actual data
-            "category_colors": category_colors,
-            "available_columns": available_columns,  # Debug info
-            "productivity_categories": productivity_categories  # Debug info
+            "categories": list(productivity_categories.keys()),
+            "categories_used": list(categories_used),
+            "category_colors": category_colors
         }
         
     except Exception as e:
@@ -226,57 +214,62 @@ def get_productivity_metrics() -> Dict[str, Any]:
                 "total_productive_hours_change": 0
             }
         
-        # Parse Excel file
+        # Parse Excel file using the existing ExcelService logic
         file_path = excel_files[0]
-        df = pd.read_excel(file_path)
+        data = excel_service.parse_excel_file(file_path)
         
-        date_col = df.columns[0]
-        df[date_col] = pd.to_datetime(df[date_col]).dt.date
+        # Get time-based habits
+        time_habits = [h for h in data['habits'] if h.habit_type == 'time']
+        time_habit_ids = [h.id for h in time_habits]
         
-        # Get 'Razem' column (total productivity)
-        total_col = 'Razem'
-        if total_col not in df.columns:
-            # Try to find a total column
-            for col in df.columns:
-                if 'total' in col.lower() or 'razem' in col.lower():
-                    total_col = col
-                    break
+        if not time_habit_ids:
+            return {
+                "avg_daily_productivity": 0,
+                "max_daily_productivity": 0,
+                "total_productive_hours": 0,
+                "avg_daily_productivity_change": 0,
+                "max_daily_productivity_change": 0,
+                "total_productive_hours_change": 0
+            }
         
-        if total_col not in df.columns:
-            # Calculate total from time-based columns
-            time_cols = []
-            for col in df.columns:
-                if col != date_col and col not in {'WEEKDAY', 'Unnamed: 8', 'Unnamed: 18'} and not col.startswith('Unnamed'):
-                    sample_values = df[col].dropna().head(10)
-                    if not sample_values.empty:
-                        try:
-                            numeric_values = pd.to_numeric(sample_values, errors='coerce')
-                            if not numeric_values.isna().all() and numeric_values.max() > 10:
-                                time_cols.append(col)
-                        except:
-                            pass
-            df['calculated_total'] = df[time_cols].fillna(0).sum(axis=1)
-            total_col = 'calculated_total'
+        # Get entries for time-based habits
+        time_entries = [e for e in data['entries'] if e.habit_id in time_habit_ids]
+        
+        # Calculate daily totals
+        daily_totals = {}
+        for entry in time_entries:
+            date_key = entry.date.date()
+            if date_key not in daily_totals:
+                daily_totals[date_key] = 0
+            if isinstance(entry.value, (int, float)):
+                daily_totals[date_key] += entry.value
         
         # Get last 7 days and previous 7 days
         today = datetime.now().date()
         week_ago = today - timedelta(days=6)
         two_weeks_ago = today - timedelta(days=13)
         
-        df_last_7 = df[(df[date_col] >= week_ago) & (df[date_col] <= today)].copy()
-        df_prev_7 = df[(df[date_col] >= two_weeks_ago) & (df[date_col] < week_ago)].copy()
-        
         # Calculate metrics for last 7 days
-        last_7_values = df_last_7[total_col].fillna(0)
-        avg_daily_current = last_7_values.mean()
-        max_daily_current = last_7_values.max()
-        total_hours_current = last_7_values.sum() / 60  # Convert to hours
+        last_7_values = []
+        for i in range(7):
+            date = week_ago + timedelta(days=i)
+            last_7_values.append(daily_totals.get(date, 0))
         
         # Calculate metrics for previous 7 days
-        prev_7_values = df_prev_7[total_col].fillna(0)
-        avg_daily_prev = prev_7_values.mean() if len(prev_7_values) > 0 else 0
-        max_daily_prev = prev_7_values.max() if len(prev_7_values) > 0 else 0
-        total_hours_prev = prev_7_values.sum() / 60 if len(prev_7_values) > 0 else 0
+        prev_7_values = []
+        for i in range(7):
+            date = two_weeks_ago + timedelta(days=i)
+            prev_7_values.append(daily_totals.get(date, 0))
+        
+        # Calculate current period metrics
+        avg_daily_current = sum(last_7_values) / len(last_7_values) if last_7_values else 0
+        max_daily_current = max(last_7_values) if last_7_values else 0
+        total_hours_current = sum(last_7_values) / 60  # Convert to hours
+        
+        # Calculate previous period metrics
+        avg_daily_prev = sum(prev_7_values) / len(prev_7_values) if prev_7_values else 0
+        max_daily_prev = max(prev_7_values) if prev_7_values else 0
+        total_hours_prev = sum(prev_7_values) / 60 if prev_7_values else 0
         
         # Calculate percentage changes
         def calculate_change(current, previous):
@@ -308,95 +301,83 @@ def get_productivity_chart_30days() -> Dict[str, Any]:
         if not excel_files:
             return {"chart_data": [], "categories": [], "category_colors": {}}
         
-        # Parse Excel file
+        # Parse Excel file using the existing ExcelService logic
         file_path = excel_files[0]
-        df = pd.read_excel(file_path)
+        data = excel_service.parse_excel_file(file_path)
         
-        date_col = df.columns[0]
-        df[date_col] = pd.to_datetime(df[date_col]).dt.date
+        # Get time-based habits and categorize them
+        time_habits = [h for h in data['habits'] if h.habit_type == 'time']
         
-        # Get time-based columns
-        available_columns = []
-        for col in df.columns:
-            if col != date_col and col not in {'WEEKDAY', 'Razem', 'Unnamed: 8', 'Unnamed: 18'} and not col.startswith('Unnamed'):
-                sample_values = df[col].dropna().head(10)
-                if not sample_values.empty:
-                    try:
-                        numeric_values = pd.to_numeric(sample_values, errors='coerce')
-                        if not numeric_values.isna().all() and numeric_values.max() > 10:
-                            available_columns.append(col)
-                    except:
-                        pass
+        if not time_habits:
+            return {"chart_data": [], "categories": [], "category_colors": {}}
         
-        # Define productivity categories
+        # Group habits into categories
         productivity_categories = {}
-        for col in available_columns:
-            col_lower = col.lower()
-            if 'tech' in col_lower or 'praca' in col_lower:
-                if "Tech" not in productivity_categories:
-                    productivity_categories["Tech"] = []
-                productivity_categories["Tech"].append(col)
-            elif 'youtube' in col_lower:
-                if "YouTube" not in productivity_categories:
-                    productivity_categories["YouTube"] = []
-                productivity_categories["YouTube"].append(col)
-            elif 'czytanie' in col_lower or 'reading' in col_lower:
-                if "Czytanie" not in productivity_categories:
-                    productivity_categories["Czytanie"] = []
-                productivity_categories["Czytanie"].append(col)
-            elif 'gitara' in col_lower or 'guitar' in col_lower:
-                if "Gitara" not in productivity_categories:
-                    productivity_categories["Gitara"] = []
-                productivity_categories["Gitara"].append(col)
-            elif 'inne' in col_lower or 'other' in col_lower:
-                if "Inne" not in productivity_categories:
-                    productivity_categories["Inne"] = []
-                productivity_categories["Inne"].append(col)
         
-        # Get last 30 days - create complete date range
+        for habit in time_habits:
+            name_lower = habit.name.lower()
+            category = "Other"
+            
+            if any(keyword in name_lower for keyword in ['tech', 'work', 'praca', 'code', 'programming', 'dev']):
+                category = "Tech"
+            elif any(keyword in name_lower for keyword in ['youtube', 'video', 'entertainment']):
+                category = "YouTube"
+            elif any(keyword in name_lower for keyword in ['reading', 'book', 'czytanie', 'read']):
+                category = "Reading"
+            elif any(keyword in name_lower for keyword in ['guitar', 'music', 'gitara', 'instrument']):
+                category = "Music"
+            elif any(keyword in name_lower for keyword in ['exercise', 'gym', 'workout', 'sport', 'fitness']):
+                category = "Fitness"
+            elif any(keyword in name_lower for keyword in ['study', 'learn', 'course', 'education']):
+                category = "Learning"
+            
+            if category not in productivity_categories:
+                productivity_categories[category] = []
+            productivity_categories[category].append(habit)
+        
+        # Get last 30 days entries
         today = datetime.now().date()
         month_ago = today - timedelta(days=29)
         
-        # Create complete date range
-        date_range = []
-        current_date = month_ago
-        while current_date <= today:
-            date_range.append(current_date)
-            current_date += timedelta(days=1)
+        # Filter entries to last 30 days
+        recent_entries = [e for e in data['entries'] 
+                         if e.date.date() >= month_ago and e.date.date() <= today]
         
-        # Prepare chart data
+        # Group entries by date and habit
+        entries_by_date = {}
+        for entry in recent_entries:
+            date_key = entry.date.date()
+            if date_key not in entries_by_date:
+                entries_by_date[date_key] = {}
+            entries_by_date[date_key][entry.habit_id] = entry.value
+        
+        # Create complete date range for last 30 days
         chart_data = []
         
-        for date in date_range:
+        for i in range(30):
+            current_date = month_ago + timedelta(days=i)
             day_data = {
-                "date": date.strftime("%Y-%m-%d"),
-                "weekday": date.strftime("%a"),
-                "total": None  # Default to None for NA handling
+                "date": current_date.strftime("%Y-%m-%d"),
+                "weekday": current_date.strftime("%a"),
+                "total": None if current_date not in entries_by_date else 0
             }
             
-            # Find row for this date
-            day_df = df[df[date_col] == date]
+            day_entries = entries_by_date.get(current_date, {})
             
-            if len(day_df) == 0:
+            if not day_entries:
                 # No data for this day - mark as NA
                 for category in productivity_categories.keys():
                     day_data[category] = None
             else:
-                # Data exists for this day
-                row = day_df.iloc[0]
-                total = 0
-                
                 # Calculate totals by category
-                for category, columns in productivity_categories.items():
+                total = 0
+                for category, habits in productivity_categories.items():
                     category_total = 0
                     
-                    for col in columns:
-                        if col in row and pd.notna(row[col]):
-                            try:
-                                value = float(row[col])
-                                category_total += value
-                            except (ValueError, TypeError):
-                                pass
+                    for habit in habits:
+                        habit_value = day_entries.get(habit.id, 0)
+                        if isinstance(habit_value, (int, float)) and habit_value > 0:
+                            category_total += habit_value
                     
                     day_data[category] = category_total
                     total += category_total
@@ -405,13 +386,15 @@ def get_productivity_chart_30days() -> Dict[str, Any]:
             
             chart_data.append(day_data)
         
-        # Define muted colors for sleek UI
+        # Define colors for each category
         category_colors = {
-            "Tech": "#64748b",      # Slate - muted blue-gray
-            "YouTube": "#6b7280",   # Gray - muted gray
-            "Czytanie": "#71717a",  # Zinc - muted gray
-            "Gitara": "#78716c",    # Stone - muted brown
-            "Inne": "#57534e"       # Stone darker - muted brown-gray
+            "Tech": "#3b82f6",      # Blue
+            "YouTube": "#ef4444",   # Red
+            "Reading": "#10b981",   # Green
+            "Music": "#f59e0b",     # Amber
+            "Fitness": "#8b5cf6",   # Purple
+            "Learning": "#06b6d4",  # Cyan
+            "Other": "#6b7280"      # Gray
         }
         
         return {

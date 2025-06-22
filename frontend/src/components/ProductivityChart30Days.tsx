@@ -36,7 +36,11 @@ export function ProductivityChart30Days({ debugMode = false }: ProductivityChart
         console.log('Fetching 30-day chart from API URL:', apiUrl)
       }
       
-      const response = await fetch(`${apiUrl}/api/analytics/productivity-chart-30days`)
+      const response = await fetch(`${apiUrl}/api/analytics/productivity-chart-30days`, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
 
       if (debugMode) {
         console.log('30-day chart response status:', response.status)
@@ -47,7 +51,15 @@ export function ProductivityChart30Days({ debugMode = false }: ProductivityChart
         if (debugMode) {
           console.log('30-day chart data:', data)
         }
-        setChartData(data)
+        
+        // Validate data structure
+        if (data && Array.isArray(data.chart_data)) {
+          setChartData(data)
+        } else {
+          console.warn('Invalid 30-day chart data structure:', data)
+        }
+      } else {
+        console.error('Failed to fetch 30-day chart:', response.status, response.statusText)
       }
     } catch (error) {
       console.error('Error fetching 30-day chart data:', error)
@@ -92,9 +104,11 @@ export function ProductivityChart30Days({ debugMode = false }: ProductivityChart
   const improvedColors = {
     "Tech": "#3b82f6",      // Blue - clear and professional
     "YouTube": "#ef4444",   // Red - distinct
-    "Czytanie": "#10b981",  // Emerald - good contrast
-    "Gitara": "#f59e0b",    // Amber - warm and visible
-    "Inne": "#8b5cf6"       // Purple - distinct from others
+    "Reading": "#10b981",   // Emerald - good contrast
+    "Music": "#f59e0b",     // Amber - warm and visible
+    "Fitness": "#8b5cf6",   // Purple - distinct from others
+    "Learning": "#06b6d4",  // Cyan - for learning
+    "Other": "#6b7280"      // Gray - for misc
   }
 
   // Use improved colors, fallback to original

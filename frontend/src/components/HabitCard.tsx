@@ -126,6 +126,17 @@ export function HabitCard({ habit, className }: HabitCardProps) {
     }
   }
 
+  // Get achievement badge
+  const getAchievementBadge = () => {
+    if (habit.current_streak >= 100) return { icon: Trophy, text: "Centurion", color: "text-yellow-400" }
+    if (habit.current_streak >= 50) return { icon: Star, text: "Champion", color: "text-purple-400" }
+    if (habit.current_streak >= 30) return { icon: Flame, text: "Master", color: "text-orange-400" }
+    if (habit.current_streak >= 7) return { icon: Sparkles, text: "Streak", color: "text-cyan-400" }
+    return null
+  }
+
+  const achievement = getAchievementBadge()
+
   // Dynamic card styles based on state
   const getCardBackground = () => {
     if (isRecordBreaking) {
