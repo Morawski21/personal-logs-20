@@ -199,23 +199,50 @@ class ExcelService:
             essential_productivity_columns = ['Tech + Praca', 'Tech+Praca', 'Tech', 'Praca', 'Inne', 'Other']
             for essential_col in essential_productivity_columns:
                 if essential_col in df.columns and essential_col not in time_habit_names:
+                    habit_id = f"habit_{essential_col}"
+                    
+                    # Check if this habit is marked as inactive in config
+                    if habit_id in saved_config and not saved_config[habit_id].active:
+                        print(f"SKIPPING force-add for {essential_col} - marked as inactive in config")  # Debug
+                        continue
+                    
                     print(f"FORCE-ADDING missing productivity column: {essential_col}")  # Debug
                     
-                    habit_id = f"habit_{essential_col}"
                     default_emoji = self._get_smart_emoji(essential_col)
                     
-                    # Create habit with forced 'time' type
-                    habit = Habit(
-                        id=habit_id,
-                        name=essential_col,
-                        emoji=default_emoji,
-                        habit_type='time',  # Force time type
-                        order=len(habits),
-                        current_streak=0,
-                        best_streak=0,
-                        completed_today=False,
-                        is_personal=False
-                    )
+                    # Use saved config if available, otherwise create default
+                    if habit_id in saved_config:
+                        config = saved_config[habit_id]
+                        habit = Habit(
+                            id=habit_id,
+                            name=config.name,
+                            emoji=config.emoji,
+                            habit_type='time',  # Force time type for analytics
+                            order=config.order,
+                            current_streak=0,
+                            best_streak=0,
+                            completed_today=False,
+                            is_personal=config.is_personal
+                        )
+                    else:
+                        # Create default config and save it
+                        default_config = self.config_service.create_default_config(
+                            habit_id, essential_col, default_emoji, len(habits), False
+                        )
+                        saved_config[habit_id] = default_config
+                        self.config_service.save_config(saved_config)
+                        
+                        habit = Habit(
+                            id=habit_id,
+                            name=essential_col,
+                            emoji=default_emoji,
+                            habit_type='time',  # Force time type
+                            order=len(habits),
+                            current_streak=0,
+                            best_streak=0,
+                            completed_today=False,
+                            is_personal=False
+                        )
                     habits.append(habit)
                     
                     # Add entries for this habit

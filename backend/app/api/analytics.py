@@ -96,48 +96,47 @@ def get_productivity_chart() -> Dict[str, Any]:
         file_path = excel_files[0]
         data = excel_service.parse_excel_file(file_path)
         
-        # Get all time-based habits (productivity activities)
-        time_habits = [h for h in data['habits'] if h.habit_type == 'time']
-        print(f"Time habits found: {[h.name for h in time_habits]}")
+        # Get productivity columns directly from Excel for analytics (independent of habit visibility)
+        import pandas as pd
+        df = pd.read_excel(file_path)
         
-        if not time_habits:
+        # Define productivity columns that should always appear in analytics
+        productivity_columns = ['Tech + Praca', 'YouTube', 'Czytanie', 'Gitara', 'Inne']
+        available_productivity_columns = [col for col in productivity_columns if col in df.columns]
+        
+        print(f"Available productivity columns for analytics: {available_productivity_columns}")
+        
+        if not available_productivity_columns:
             return {"chart_data": [], "categories": [], "category_colors": {}}
+        
+        # Process data directly from Excel for analytics
+        date_col = df.columns[0]  # First column is date
+        
+        # Parse dates
+        try:
+            df[date_col] = pd.to_datetime(df[date_col], dayfirst=True).dt.date
+        except:
+            try:
+                df[date_col] = pd.to_datetime(df[date_col], format='%d.%m.%Y').dt.date
+            except:
+                df[date_col] = pd.to_datetime(df[date_col]).dt.date
         
         # Get most recent 7 days of data
-        all_entries = data['entries']
-        if not all_entries:
+        all_dates = df[date_col].dropna()
+        if len(all_dates) == 0:
             return {"chart_data": [], "categories": [], "category_colors": {}}
             
-        # Find most recent date and get 7 days back from there
-        all_dates = [e.date.date() if hasattr(e.date, 'date') else e.date for e in all_entries]
-        most_recent_date = max(all_dates)
+        most_recent_date = all_dates.max()
         week_start = most_recent_date - timedelta(days=6)
         
         print(f"Using date range: {week_start} to {most_recent_date}")
         
-        # Filter entries to this week
-        week_entries = []
-        for e in all_entries:
-            entry_date = e.date.date() if hasattr(e.date, 'date') else e.date
-            if week_start <= entry_date <= most_recent_date:
-                week_entries.append(e)
-        
-        # Group entries by date and habit
-        entries_by_date = {}
-        for entry in week_entries:
-            date_key = entry.date.date() if hasattr(entry.date, 'date') else entry.date
-            if date_key not in entries_by_date:
-                entries_by_date[date_key] = {}
-            # Convert to float and handle NA/NaN values
-            try:
-                value = float(entry.value) if entry.value not in ['NA', 'nan', None, ''] else 0
-            except (ValueError, TypeError):
-                value = 0
-            entries_by_date[date_key][entry.habit_id] = value
+        # Filter to this week's data
+        week_df = df[(df[date_col] >= week_start) & (df[date_col] <= most_recent_date)]
         
         # Build chart data for 7 days
         chart_data = []
-        categories = [h.name for h in time_habits]
+        categories = available_productivity_columns
         
         for i in range(7):
             current_date = week_start + timedelta(days=i)
@@ -147,13 +146,22 @@ def get_productivity_chart() -> Dict[str, Any]:
                 "total": 0
             }
             
-            day_entries = entries_by_date.get(current_date, {})
+            # Get data for this day
+            day_row = week_df[week_df[date_col] == current_date]
             
-            # Add data for each time habit
-            for habit in time_habits:
-                habit_value = day_entries.get(habit.id, 0)
-                day_data[habit.name] = habit_value
-                day_data["total"] += habit_value
+            # Add data for each productivity column
+            for col in available_productivity_columns:
+                if len(day_row) > 0 and col in day_row.columns:
+                    value = day_row[col].iloc[0]
+                    try:
+                        value = float(value) if value not in ['NA', 'nan', None, ''] and pd.notna(value) else 0
+                    except (ValueError, TypeError):
+                        value = 0
+                else:
+                    value = 0
+                
+                day_data[col] = value
+                day_data["total"] += value
             
             chart_data.append(day_data)
         
@@ -307,52 +315,50 @@ def get_productivity_chart_30days() -> Dict[str, Any]:
         file_path = excel_files[0]
         data = excel_service.parse_excel_file(file_path)
         
-        # Get all time-based habits
-        time_habits = [h for h in data['habits'] if h.habit_type == 'time']
+        # Get productivity columns directly from Excel for analytics (independent of habit visibility)
+        import pandas as pd
+        df = pd.read_excel(file_path)
         
-        if not time_habits:
+        # Define productivity columns that should always appear in analytics
+        productivity_columns = ['Tech + Praca', 'YouTube', 'Czytanie', 'Gitara', 'Inne']
+        available_productivity_columns = [col for col in productivity_columns if col in df.columns]
+        
+        if not available_productivity_columns:
             return {"chart_data": [], "categories": [], "category_colors": {}}
+        
+        # Process data directly from Excel for analytics
+        date_col = df.columns[0]  # First column is date
+        
+        # Parse dates
+        try:
+            df[date_col] = pd.to_datetime(df[date_col], dayfirst=True).dt.date
+        except:
+            try:
+                df[date_col] = pd.to_datetime(df[date_col], format='%d.%m.%Y').dt.date
+            except:
+                df[date_col] = pd.to_datetime(df[date_col]).dt.date
         
         # Get most recent 30 days of data
-        all_entries = data['entries']
-        if not all_entries:
+        all_dates = df[date_col].dropna()
+        if len(all_dates) == 0:
             return {"chart_data": [], "categories": [], "category_colors": {}}
             
-        # Find most recent date and get 30 days back from there
-        all_dates = [e.date.date() if hasattr(e.date, 'date') else e.date for e in all_entries]
-        most_recent_date = max(all_dates)
+        most_recent_date = all_dates.max()
         month_start = most_recent_date - timedelta(days=29)
         
-        # Filter entries to this month
-        month_entries = []
-        for e in all_entries:
-            entry_date = e.date.date() if hasattr(e.date, 'date') else e.date
-            if month_start <= entry_date <= most_recent_date:
-                month_entries.append(e)
-        
-        # Group entries by date and habit
-        entries_by_date = {}
-        for entry in month_entries:
-            date_key = entry.date.date() if hasattr(entry.date, 'date') else entry.date
-            if date_key not in entries_by_date:
-                entries_by_date[date_key] = {}
-            # Convert to float and handle NA/NaN values
-            try:
-                value = float(entry.value) if entry.value not in ['NA', 'nan', None, ''] else 0
-            except (ValueError, TypeError):
-                value = 0
-            entries_by_date[date_key][entry.habit_id] = value
+        # Filter to this month's data
+        month_df = df[(df[date_col] >= month_start) & (df[date_col] <= most_recent_date)]
         
         # Build chart data for 30 days
         chart_data = []
-        categories = [h.name for h in time_habits]
+        categories = available_productivity_columns
         
         for i in range(30):
             current_date = month_start + timedelta(days=i)
             
-            # Check if we have data for this date
-            day_entries = entries_by_date.get(current_date, {})
-            has_data = len(day_entries) > 0
+            # Get data for this day
+            day_row = month_df[month_df[date_col] == current_date]
+            has_data = len(day_row) > 0
             
             day_data = {
                 "date": current_date.strftime("%Y-%m-%d"),
@@ -360,15 +366,19 @@ def get_productivity_chart_30days() -> Dict[str, Any]:
                 "total": None if not has_data else 0
             }
             
-            # Add data for each time habit
-            for habit in time_habits:
-                if has_data:
-                    habit_value = day_entries.get(habit.id, 0)
-                    day_data[habit.name] = habit_value
+            # Add data for each productivity column
+            for col in available_productivity_columns:
+                if has_data and col in day_row.columns:
+                    value = day_row[col].iloc[0]
+                    try:
+                        value = float(value) if value not in ['NA', 'nan', None, ''] and pd.notna(value) else 0
+                    except (ValueError, TypeError):
+                        value = 0
+                    day_data[col] = value
                     if day_data["total"] is not None:
-                        day_data["total"] += habit_value
+                        day_data["total"] += value
                 else:
-                    day_data[habit.name] = None
+                    day_data[col] = None
             
             chart_data.append(day_data)
         
