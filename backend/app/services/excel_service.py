@@ -14,10 +14,14 @@ class ExcelService:
         self.config_service = HabitConfigService()
     
     def find_excel_files(self) -> List[Path]:
-        """Find all Excel files in the data directory"""
+        """Find all Excel files in the data directory, excluding temporary lock files"""
         excel_files = []
         for ext in ['*.xlsx', '*.xls']:
-            excel_files.extend(self.data_path.glob(ext))
+            all_files = self.data_path.glob(ext)
+            # Filter out temporary Excel lock files (starting with ~$)
+            excel_files.extend([f for f in all_files if not f.name.startswith('~$')])
+        
+        print(f"Found Excel files: {[str(f) for f in excel_files]}")  # Debug
         return excel_files
     
     def parse_excel_file(self, file_path: Path) -> Dict[str, Any]:
