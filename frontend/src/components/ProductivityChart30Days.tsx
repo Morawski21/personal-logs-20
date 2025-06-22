@@ -205,13 +205,13 @@ export function ProductivityChart30Days({ debugMode = false }: ProductivityChart
                   </motion.div>
                 </div>
                 
-                {/* Date labels - show every 5th day */}
-                {(index + 1) % 5 === 0 && (
-                  <div className="mt-2 text-center">
-                    <div className="text-xs text-white/60 font-medium">
+                {/* Date labels - show every 3rd day */}
+                {index % 3 === 0 && (
+                  <div className="mt-1 text-center">
+                    <div className="text-xs text-white/70 font-medium">
                       {date.getDate()}
                     </div>
-                    <div className="text-xs text-white/40">
+                    <div className="text-xs text-white/50">
                       {date.toLocaleDateString('en', { month: 'short' })}
                     </div>
                   </div>

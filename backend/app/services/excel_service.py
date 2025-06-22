@@ -30,6 +30,7 @@ class ExcelService:
             df = pd.read_excel(file_path)
             
             # System columns that should not be treated as habits (from old app)
+            # Note: Make sure "Tech + Praca" is NOT in this list!
             SYSTEM_COLUMNS = {'Data', 'WEEKDAY', 'Razem', 'Unnamed: 8', 'Unnamed: 18'}
             
             print(f"System columns to exclude: {SYSTEM_COLUMNS}")  # Debug
@@ -82,7 +83,13 @@ class ExcelService:
                 sample_values = df[col].dropna().head(10)
                 habit_type = self._determine_habit_type(sample_values)
                 
-                print(f"Column '{col}': type={habit_type}, sample_count={len(sample_values)}")  # Debug
+                print(f"Column '{col}': type={habit_type}, sample_count={len(sample_values)}, sample_values={list(sample_values[:3])}")  # Debug
+                
+                # Special check for "Tech + Praca" column
+                if "tech" in col.lower() or "praca" in col.lower():
+                    print(f"*** TECH+PRACA COLUMN FOUND: '{col}' with {len(sample_values)} values")  # Debug
+                    print(f"    Sample values: {list(sample_values[:5])}")  # Debug
+                    print(f"    Detected type: {habit_type}")  # Debug
                 
                 # Skip if no meaningful data
                 if len(sample_values) == 0:
