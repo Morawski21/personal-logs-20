@@ -406,6 +406,11 @@ def debug_data() -> Dict[str, Any]:
         all_entry_dates = [e.date.date() if hasattr(e.date, 'date') else e.date for e in data['entries']]
         most_recent_date = max(all_entry_dates) if all_entry_dates else None
         
+        # Read raw Excel to check columns
+        import pandas as pd
+        raw_df = pd.read_excel(file_path)
+        all_columns = list(raw_df.columns)
+        
         return {
             "file_path": str(file_path),
             "habits_count": len(data['habits']),
@@ -416,7 +421,10 @@ def debug_data() -> Dict[str, Any]:
             "binary_habits": [h.name for h in data['habits'] if h.habit_type == 'binary'],
             "description_habits": [h.name for h in data['habits'] if h.habit_type == 'description'],
             "most_recent_entry_date": str(most_recent_date) if most_recent_date else None,
-            "days_since_last_entry": (datetime.now().date() - most_recent_date).days if most_recent_date else None
+            "days_since_last_entry": (datetime.now().date() - most_recent_date).days if most_recent_date else None,
+            "raw_excel_columns": all_columns,
+            "missing_tech_praca": "Tech + Praca" in all_columns,
+            "tech_related_columns": [col for col in all_columns if 'tech' in col.lower() or 'praca' in col.lower()]
         }
         
     except Exception as e:

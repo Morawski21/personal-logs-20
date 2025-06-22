@@ -56,12 +56,32 @@ class ExcelService:
                     print("Parsed dates with default format")  # Debug
             
             # Extract habit columns (exclude date and system columns)
-            habit_columns = [col for col in df.columns 
-                           if col != date_col and col not in SYSTEM_COLUMNS 
-                           and not col.startswith('Unnamed')]
+            # Handle all possible variations of "Tech + Praca" column name
+            habit_columns = []
+            for col in df.columns:
+                # Skip date column
+                if col == date_col:
+                    continue
+                    
+                # Skip system columns
+                if col in SYSTEM_COLUMNS:
+                    continue
+                    
+                # Skip unnamed columns
+                if str(col).startswith('Unnamed'):
+                    continue
+                    
+                # Include this column as a habit
+                habit_columns.append(col)
             
-            print(f"Filtered habit columns: {habit_columns}")  # Debug
-            print(f"Columns excluded: {[col for col in df.columns if col != date_col and (col in SYSTEM_COLUMNS or col.startswith('Unnamed'))]}")  # Debug
+            print(f"All Excel columns: {list(df.columns)}")  # Debug
+            print(f"Date column: {date_col}")  # Debug
+            print(f"System columns excluded: {SYSTEM_COLUMNS}")  # Debug
+            print(f"Final habit columns: {habit_columns}")  # Debug
+            
+            # Specifically look for Tech + Praca variations
+            tech_columns = [col for col in df.columns if 'tech' in str(col).lower() or 'praca' in str(col).lower()]
+            print(f"Tech-related columns found: {tech_columns}")  # Debug
             
             habits = []
             entries = []
@@ -81,20 +101,31 @@ class ExcelService:
                 
                 # Determine habit type based on values
                 sample_values = df[col].dropna().head(10)
+                
+                # Special handling for potential data issues
+                if len(sample_values) == 0:
+                    print(f"WARNING: Column '{col}' has no non-null values")  # Debug
+                    # Check total values including nulls
+                    total_values = len(df[col])
+                    null_values = df[col].isnull().sum()
+                    print(f"  Total values: {total_values}, Null values: {null_values}")  # Debug
+                    # Skip if truly empty
+                    continue
+                
                 habit_type = self._determine_habit_type(sample_values)
                 
                 print(f"Column '{col}': type={habit_type}, sample_count={len(sample_values)}, sample_values={list(sample_values[:3])}")  # Debug
                 
-                # Special check for "Tech + Praca" column
+                # Force "Tech + Praca" type if needed - productivity columns should be 'time'
                 if "tech" in col.lower() or "praca" in col.lower():
                     print(f"*** TECH+PRACA COLUMN FOUND: '{col}' with {len(sample_values)} values")  # Debug
                     print(f"    Sample values: {list(sample_values[:5])}")  # Debug
                     print(f"    Detected type: {habit_type}")  # Debug
-                
-                # Skip if no meaningful data
-                if len(sample_values) == 0:
-                    print(f"Skipping column '{col}' - no data")  # Debug
-                    continue
+                    
+                    # Force to 'time' type if it looks like productivity data
+                    if habit_type != 'time':
+                        print(f"    FORCING type to 'time' for productivity column")  # Debug
+                        habit_type = 'time'
                 
                 # Use saved config or create default
                 if habit_id in saved_config:
@@ -150,6 +181,48 @@ class ExcelService:
                         entry_count += 1
                 
                 print(f"Created {entry_count} entries for habit '{col}'")  # Debug
+            
+            # Final check: ensure we have essential productivity columns
+            time_habit_names = [h.name for h in habits if h.habit_type == 'time']
+            print(f"Final time habits: {time_habit_names}")  # Debug
+            
+            # If we're missing obvious productivity columns, add them manually
+            essential_productivity_columns = ['Tech + Praca', 'Tech+Praca', 'Tech', 'Praca']
+            for essential_col in essential_productivity_columns:
+                if essential_col in df.columns and essential_col not in time_habit_names:
+                    print(f"FORCE-ADDING missing productivity column: {essential_col}")  # Debug
+                    
+                    habit_id = f"habit_{essential_col}"
+                    default_emoji = self._get_smart_emoji(essential_col)
+                    
+                    # Create habit with forced 'time' type
+                    habit = Habit(
+                        id=habit_id,
+                        name=essential_col,
+                        emoji=default_emoji,
+                        habit_type='time',  # Force time type
+                        order=len(habits),
+                        current_streak=0,
+                        best_streak=0,
+                        completed_today=False,
+                        is_personal=False
+                    )
+                    habits.append(habit)
+                    
+                    # Add entries for this habit
+                    entry_count = 0
+                    for _, row in df.iterrows():
+                        if pd.notna(row[essential_col]) and pd.notna(row[date_col]):
+                            entry = HabitEntry(
+                                habit_id=habit_id,
+                                date=row[date_col],
+                                value=str(row[essential_col]),
+                                completed=self._is_completed(row[essential_col], 'time')
+                            )
+                            entries.append(entry)
+                            entry_count += 1
+                    
+                    print(f"Force-added {entry_count} entries for {essential_col}")  # Debug
             
             return {
                 'habits': habits,
@@ -210,22 +283,47 @@ class ExcelService:
         
         # Try to convert to numeric first
         try:
-            numeric_values = pd.to_numeric(values, errors='coerce')
+            # Handle 'NA' strings and other non-numeric values
+            clean_values = values.replace(['NA', 'na', 'NaN', 'nan', ''], pd.NA)
+            numeric_values = pd.to_numeric(clean_values, errors='coerce')
+            
             if not numeric_values.isna().all():
                 # Check if values look like time (larger numbers, typically minutes)
                 max_val = numeric_values.max()
-                # Lower threshold for time detection - your data has values like 20, 30, etc.
-                if max_val >= 5:  # Likely time in minutes (was 10, now 5)
-                    print(f"Detected time habit: max_val={max_val}, values={list(numeric_values.dropna()[:5])}")  # Debug
+                min_val = numeric_values.min()
+                
+                print(f"Numeric analysis: max={max_val}, min={min_val}, non_null_count={numeric_values.count()}")  # Debug
+                
+                # More sophisticated detection
+                # If we have values > 5 and it's not just 0/1, likely time
+                unique_vals = set(numeric_values.dropna())
+                if len(unique_vals) > 2 and max_val >= 5:  # More than just 0/1 and reasonable time values
+                    print(f"Detected time habit: unique_values={unique_vals}")  # Debug
                     return 'time'
-                else:  # Likely binary (0/1)
-                    print(f"Detected binary habit: max_val={max_val}, values={list(numeric_values.dropna()[:5])}")  # Debug
+                elif unique_vals.issubset({0, 1, 0.0, 1.0}):  # Only 0s and 1s
+                    print(f"Detected binary habit: unique_values={unique_vals}")  # Debug
                     return 'binary'
-        except:
+                elif max_val >= 5:  # Has larger values, probably time
+                    print(f"Detected time habit (fallback): max_val={max_val}")  # Debug
+                    return 'time'
+                else:
+                    print(f"Detected binary habit (fallback): max_val={max_val}")  # Debug
+                    return 'binary'
+        except Exception as e:
+            print(f"Error in numeric conversion: {e}")  # Debug
             pass
         
         # Check if all values are strings (descriptions)
         if values.dtype == 'object':
+            # Check if strings are actually numbers
+            try:
+                numeric_test = pd.to_numeric(values.replace(['NA', 'na', 'NaN', 'nan', ''], pd.NA), errors='coerce')
+                if not numeric_test.isna().all():
+                    # These are numeric strings, retry detection
+                    return self._determine_habit_type(numeric_test)
+            except:
+                pass
+            
             print(f"Detected description habit: sample_values={list(values.dropna()[:3])}")  # Debug
             return 'description'
             
