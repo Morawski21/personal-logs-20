@@ -290,7 +290,7 @@ export function ProductivityChart30Days({ debugMode = false }: ProductivityChart
               />
               <div className="text-sm font-bold text-white/90">{formatTime(total)}</div>
               <div className="text-xs text-white/60">{category}</div>
-              <div className="text-xs text-white/40">avg: {formatTime(average)}</div>
+              <div className="text-xs text-white/40">avg: {formatTime(Math.round(average))}</div>
             </motion.div>
           )
         })}

@@ -109,10 +109,19 @@ class ExcelService:
                     total_values = len(df[col])
                     null_values = df[col].isnull().sum()
                     print(f"  Total values: {total_values}, Null values: {null_values}")  # Debug
-                    # Skip if truly empty
-                    continue
+                    
+                    # Don't skip essential analytics columns even if they have no data
+                    if col.lower() not in ['inne', 'other']:
+                        continue
+                    else:
+                        print(f"  Keeping '{col}' for analytics despite no data")  # Debug
                 
-                habit_type = self._determine_habit_type(sample_values)
+                # For columns with no data, assume 'time' type if they're analytics columns
+                if len(sample_values) == 0 and col.lower() in ['inne', 'other']:
+                    habit_type = 'time'
+                    print(f"  Defaulting to 'time' type for analytics column '{col}'")  # Debug
+                else:
+                    habit_type = self._determine_habit_type(sample_values)
                 
                 print(f"Column '{col}': type={habit_type}, sample_count={len(sample_values)}, sample_values={list(sample_values[:3])}")  # Debug
                 
@@ -187,7 +196,7 @@ class ExcelService:
             print(f"Final time habits: {time_habit_names}")  # Debug
             
             # If we're missing obvious productivity columns, add them manually
-            essential_productivity_columns = ['Tech + Praca', 'Tech+Praca', 'Tech', 'Praca']
+            essential_productivity_columns = ['Tech + Praca', 'Tech+Praca', 'Tech', 'Praca', 'Inne', 'Other']
             for essential_col in essential_productivity_columns:
                 if essential_col in df.columns and essential_col not in time_habit_names:
                     print(f"FORCE-ADDING missing productivity column: {essential_col}")  # Debug
