@@ -90,40 +90,30 @@ def get_productivity_chart() -> Dict[str, Any]:
     try:
         excel_files = excel_service.find_excel_files()
         if not excel_files:
-            return {"chart_data": [], "categories": []}
+            print("No Excel files found in data directory")
+            return {"chart_data": [], "categories": [], "category_colors": {}}
         
         # Parse Excel file using the existing ExcelService logic
         file_path = excel_files[0]  # Use first Excel file
+        print(f"Parsing Excel file: {file_path}")
         data = excel_service.parse_excel_file(file_path)
         
-        # Get time-based habits from the parsed data
+        # Get time-based habits from the parsed data (productivity activities with minutes)
         time_habits = [h for h in data['habits'] if h.habit_type == 'time']
         
         if not time_habits:
-            return {"chart_data": [], "categories": []}
+            print("No time-based habits found")
+            return {"chart_data": [], "categories": [], "category_colors": {}}
         
-        print(f"Found {len(time_habits)} time-based habits")  # Debug log
+        print(f"Found {len(time_habits)} time-based habits: {[h.name for h in time_habits]}")  # Debug log
         
-        # Group habits into categories based on their names
+        # Use habit names directly as categories for time-based habits
+        # This allows the config system to work properly when column names change
         productivity_categories = {}
         
         for habit in time_habits:
-            name_lower = habit.name.lower()
-            category = "Other"  # Default category
-            
-            # Smart categorization based on habit names
-            if any(keyword in name_lower for keyword in ['tech', 'work', 'praca', 'code', 'programming', 'dev']):
-                category = "Tech"
-            elif any(keyword in name_lower for keyword in ['youtube', 'video', 'entertainment']):
-                category = "YouTube"
-            elif any(keyword in name_lower for keyword in ['reading', 'book', 'czytanie', 'read']):
-                category = "Reading"
-            elif any(keyword in name_lower for keyword in ['guitar', 'music', 'gitara', 'instrument']):
-                category = "Music"
-            elif any(keyword in name_lower for keyword in ['exercise', 'gym', 'workout', 'sport', 'fitness']):
-                category = "Fitness"
-            elif any(keyword in name_lower for keyword in ['study', 'learn', 'course', 'education']):
-                category = "Learning"
+            # Use the configured habit name as the category
+            category = habit.name
             
             if category not in productivity_categories:
                 productivity_categories[category] = []
@@ -178,16 +168,23 @@ def get_productivity_chart() -> Dict[str, Any]:
             
             chart_data.append(day_data)
         
-        # Define colors for each category
-        category_colors = {
-            "Tech": "#3b82f6",      # Blue
-            "YouTube": "#ef4444",   # Red
-            "Reading": "#10b981",   # Green
-            "Music": "#f59e0b",     # Amber
-            "Fitness": "#8b5cf6",   # Purple
-            "Learning": "#06b6d4",  # Cyan
-            "Other": "#6b7280"      # Gray
-        }
+        # Generate colors dynamically for each category
+        color_palette = [
+            "#3b82f6",  # Blue
+            "#ef4444",  # Red
+            "#10b981",  # Green
+            "#f59e0b",  # Amber
+            "#8b5cf6",  # Purple
+            "#06b6d4",  # Cyan
+            "#ec4899",  # Pink
+            "#84cc16",  # Lime
+            "#f97316",  # Orange
+            "#6b7280"   # Gray
+        ]
+        
+        category_colors = {}
+        for i, category in enumerate(productivity_categories.keys()):
+            category_colors[category] = color_palette[i % len(color_palette)]
         
         return {
             "chart_data": chart_data,
@@ -311,25 +308,13 @@ def get_productivity_chart_30days() -> Dict[str, Any]:
         if not time_habits:
             return {"chart_data": [], "categories": [], "category_colors": {}}
         
-        # Group habits into categories
+        # Use habit names directly as categories for time-based habits
+        # This allows the config system to work properly when column names change
         productivity_categories = {}
         
         for habit in time_habits:
-            name_lower = habit.name.lower()
-            category = "Other"
-            
-            if any(keyword in name_lower for keyword in ['tech', 'work', 'praca', 'code', 'programming', 'dev']):
-                category = "Tech"
-            elif any(keyword in name_lower for keyword in ['youtube', 'video', 'entertainment']):
-                category = "YouTube"
-            elif any(keyword in name_lower for keyword in ['reading', 'book', 'czytanie', 'read']):
-                category = "Reading"
-            elif any(keyword in name_lower for keyword in ['guitar', 'music', 'gitara', 'instrument']):
-                category = "Music"
-            elif any(keyword in name_lower for keyword in ['exercise', 'gym', 'workout', 'sport', 'fitness']):
-                category = "Fitness"
-            elif any(keyword in name_lower for keyword in ['study', 'learn', 'course', 'education']):
-                category = "Learning"
+            # Use the configured habit name as the category
+            category = habit.name
             
             if category not in productivity_categories:
                 productivity_categories[category] = []
@@ -386,16 +371,23 @@ def get_productivity_chart_30days() -> Dict[str, Any]:
             
             chart_data.append(day_data)
         
-        # Define colors for each category
-        category_colors = {
-            "Tech": "#3b82f6",      # Blue
-            "YouTube": "#ef4444",   # Red
-            "Reading": "#10b981",   # Green
-            "Music": "#f59e0b",     # Amber
-            "Fitness": "#8b5cf6",   # Purple
-            "Learning": "#06b6d4",  # Cyan
-            "Other": "#6b7280"      # Gray
-        }
+        # Generate colors dynamically for each category
+        color_palette = [
+            "#3b82f6",  # Blue
+            "#ef4444",  # Red
+            "#10b981",  # Green
+            "#f59e0b",  # Amber
+            "#8b5cf6",  # Purple
+            "#06b6d4",  # Cyan
+            "#ec4899",  # Pink
+            "#84cc16",  # Lime
+            "#f97316",  # Orange
+            "#6b7280"   # Gray
+        ]
+        
+        category_colors = {}
+        for i, category in enumerate(productivity_categories.keys()):
+            category_colors[category] = color_palette[i % len(color_palette)]
         
         return {
             "chart_data": chart_data,
