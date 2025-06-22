@@ -157,11 +157,26 @@ def get_productivity_chart() -> Dict[str, Any]:
             
             chart_data.append(day_data)
         
-        # Generate colors for categories
-        color_palette = ["#3b82f6", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6", "#06b6d4", "#ec4899", "#84cc16"]
+        # Generate colors for categories with your preferred mapping
+        preferred_colors = {
+            "Tech + Praca": "#3b82f6",    # Blue
+            "Tech": "#3b82f6",            # Blue  
+            "Praca": "#3b82f6",           # Blue
+            "Gitara": "#8b5cf6",          # Purple
+            "Czytanie": "#eab308",        # Yellow
+            "YouTube": "#ef4444",         # Red
+            "Inne": "#6b7280",            # Grey
+            "Other": "#6b7280"            # Grey
+        }
+        
         category_colors = {}
+        fallback_colors = ["#3b82f6", "#8b5cf6", "#eab308", "#ef4444", "#6b7280", "#06b6d4", "#ec4899", "#84cc16"]
+        
         for i, category in enumerate(categories):
-            category_colors[category] = color_palette[i % len(color_palette)]
+            if category in preferred_colors:
+                category_colors[category] = preferred_colors[category]
+            else:
+                category_colors[category] = fallback_colors[i % len(fallback_colors)]
         
         return {
             "chart_data": chart_data,
@@ -357,11 +372,26 @@ def get_productivity_chart_30days() -> Dict[str, Any]:
             
             chart_data.append(day_data)
         
-        # Generate colors for categories
-        color_palette = ["#3b82f6", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6", "#06b6d4", "#ec4899", "#84cc16"]
+        # Generate colors for categories with your preferred mapping
+        preferred_colors = {
+            "Tech + Praca": "#3b82f6",    # Blue
+            "Tech": "#3b82f6",            # Blue  
+            "Praca": "#3b82f6",           # Blue
+            "Gitara": "#8b5cf6",          # Purple
+            "Czytanie": "#eab308",        # Yellow
+            "YouTube": "#ef4444",         # Red
+            "Inne": "#6b7280",            # Grey
+            "Other": "#6b7280"            # Grey
+        }
+        
         category_colors = {}
+        fallback_colors = ["#3b82f6", "#8b5cf6", "#eab308", "#ef4444", "#6b7280", "#06b6d4", "#ec4899", "#84cc16"]
+        
         for i, category in enumerate(categories):
-            category_colors[category] = color_palette[i % len(color_palette)]
+            if category in preferred_colors:
+                category_colors[category] = preferred_colors[category]
+            else:
+                category_colors[category] = fallback_colors[i % len(fallback_colors)]
         
         return {
             "chart_data": chart_data,

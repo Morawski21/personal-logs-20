@@ -5,13 +5,13 @@ import dynamic from 'next/dynamic'
 import { motion } from 'framer-motion'
 import { Target, TrendingUp, Calendar, Award, BarChart3 } from 'lucide-react'
 import { useHabitStore } from '@/stores/habitStore'
-// Dynamically import charts to prevent hydration issues
-const ProductivityChart = dynamic(() => import('./ProductivityChart').then(mod => ({ default: mod.ProductivityChart })), {
+// Dynamically import Recharts components to prevent hydration issues
+const ProductivityChart = dynamic(() => import('./ProductivityChartRecharts').then(mod => ({ default: mod.ProductivityChart })), {
   ssr: false,
   loading: () => <div className="h-64 flex items-center justify-center"><div className="text-white/60">Loading chart...</div></div>
 })
 
-const ProductivityChart30Days = dynamic(() => import('./ProductivityChart30Days').then(mod => ({ default: mod.ProductivityChart30Days })), {
+const ProductivityChart30Days = dynamic(() => import('./ProductivityChart30DaysRecharts').then(mod => ({ default: mod.ProductivityChart30Days })), {
   ssr: false,
   loading: () => <div className="h-64 flex items-center justify-center"><div className="text-white/60">Loading 30-day chart...</div></div>
 })
