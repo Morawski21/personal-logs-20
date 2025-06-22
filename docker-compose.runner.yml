@@ -1,27 +1,24 @@
 version: '3.8'
-
 services:
   github-runner:
     image: myoung34/github-runner:latest
-    container_name: github-actions-runner-personal-logs-20
+    container_name: github-runner
     environment:
-      REPO_URL: https://github.com/Morawski21/personal-logs-20
-      RUNNER_TOKEN: YOUR_NEW_TOKEN_HERE
-      RUNNER_NAME: synology-runner-personal-logs-20
-      RUNNER_WORKDIR: /tmp/runner/work
-      RUNNER_GROUP: default
-      LABELS: linux,x64,synology
+      RUNNER_TOKEN: "ANDIVZAWGHFPZ2Y3ZS6A6W3IK7ND2"
+      RUNNER_WORKDIR: "/tmp/github-runner"
+      RUNNER_ALLOW_RUNASROOT: "true"
+      ORG_RUNNER: "false"
+      REPO_URL: "https://github.com/Morawski21/personal-logs-20"
+      RUNNER_NAME: "synology-runner"
+      LABELS: "linux,x64,synology,docker"
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - runner-tmp:/tmp/runner
+      - /volume1/docker/docker.sock:/var/run/docker.sock
+      - /volume1/docker/github-runner:/tmp/github-runner
       - /usr/local/bin/docker:/usr/bin/docker:ro
     restart: unless-stopped
     privileged: true
-    networks:
-      - default
 
-volumes:
-  runner-tmp:
+volumes: {}
 
 networks:
   default:
