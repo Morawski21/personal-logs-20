@@ -28,14 +28,32 @@ class ExcelService:
             # System columns that should not be treated as habits (from old app)
             SYSTEM_COLUMNS = {'Data', 'WEEKDAY', 'Razem', 'Unnamed: 8', 'Unnamed: 18'}
             
+            print(f"Raw Excel columns: {list(df.columns)}")  # Debug
+            print(f"DataFrame shape: {df.shape}")  # Debug
+            
             # Assume first column is date
             date_col = df.columns[0]
-            df[date_col] = pd.to_datetime(df[date_col]).dt.date
+            print(f"Date column: '{date_col}'")  # Debug
+            print(f"Sample date values: {list(df[date_col].dropna().head(3))}")  # Debug
+            
+            # Try multiple date formats that might be in your Excel file
+            try:
+                df[date_col] = pd.to_datetime(df[date_col], dayfirst=True).dt.date
+                print("Successfully parsed dates with dayfirst=True")  # Debug
+            except:
+                try:
+                    df[date_col] = pd.to_datetime(df[date_col], format='%d.%m.%Y').dt.date
+                    print("Successfully parsed dates with format '%d.%m.%Y'")  # Debug
+                except:
+                    df[date_col] = pd.to_datetime(df[date_col]).dt.date
+                    print("Parsed dates with default format")  # Debug
             
             # Extract habit columns (exclude date and system columns)
             habit_columns = [col for col in df.columns 
                            if col != date_col and col not in SYSTEM_COLUMNS 
                            and not col.startswith('Unnamed')]
+            
+            print(f"Filtered habit columns: {habit_columns}")  # Debug
             
             habits = []
             entries = []
@@ -57,8 +75,11 @@ class ExcelService:
                 sample_values = df[col].dropna().head(10)
                 habit_type = self._determine_habit_type(sample_values)
                 
+                print(f"Column '{col}': type={habit_type}, sample_count={len(sample_values)}")  # Debug
+                
                 # Skip if no meaningful data
                 if len(sample_values) == 0:
+                    print(f"Skipping column '{col}' - no data")  # Debug
                     continue
                 
                 # Use saved config or create default
@@ -102,6 +123,7 @@ class ExcelService:
                 habits.append(habit)
                 
                 # Process entries for this habit
+                entry_count = 0
                 for _, row in df.iterrows():
                     if pd.notna(row[col]) and pd.notna(row[date_col]):
                         entry = HabitEntry(
@@ -111,6 +133,9 @@ class ExcelService:
                             completed=self._is_completed(row[col], habit_type)
                         )
                         entries.append(entry)
+                        entry_count += 1
+                
+                print(f"Created {entry_count} entries for habit '{col}'")  # Debug
             
             return {
                 'habits': habits,
@@ -175,15 +200,19 @@ class ExcelService:
             if not numeric_values.isna().all():
                 # Check if values look like time (larger numbers, typically minutes)
                 max_val = numeric_values.max()
-                if max_val > 10:  # Likely time in minutes
+                # Lower threshold for time detection - your data has values like 20, 30, etc.
+                if max_val >= 5:  # Likely time in minutes (was 10, now 5)
+                    print(f"Detected time habit: max_val={max_val}, values={list(numeric_values.dropna()[:5])}")  # Debug
                     return 'time'
                 else:  # Likely binary (0/1)
+                    print(f"Detected binary habit: max_val={max_val}, values={list(numeric_values.dropna()[:5])}")  # Debug
                     return 'binary'
         except:
             pass
         
         # Check if all values are strings (descriptions)
         if values.dtype == 'object':
+            print(f"Detected description habit: sample_values={list(values.dropna()[:3])}")  # Debug
             return 'description'
             
         return 'binary'  # Default fallback

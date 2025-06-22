@@ -98,11 +98,18 @@ def get_productivity_chart() -> Dict[str, Any]:
         print(f"Parsing Excel file: {file_path}")
         data = excel_service.parse_excel_file(file_path)
         
+        # Debug: Show all habits and their types
+        all_habits = data['habits']
+        print(f"All habits found: {len(all_habits)}")
+        for h in all_habits:
+            print(f"  - {h.name} (ID: {h.id}, Type: {h.habit_type})")
+        
         # Get time-based habits from the parsed data (productivity activities with minutes)
         time_habits = [h for h in data['habits'] if h.habit_type == 'time']
         
         if not time_habits:
             print("No time-based habits found")
+            print(f"Available habit types: {set(h.habit_type for h in all_habits)}")
             return {"chart_data": [], "categories": [], "category_colors": {}}
         
         print(f"Found {len(time_habits)} time-based habits: {[h.name for h in time_habits]}")  # Debug log
@@ -121,13 +128,27 @@ def get_productivity_chart() -> Dict[str, Any]:
         
         print(f"Productivity categories: {list(productivity_categories.keys())}")  # Debug log
         
+        # Debug: Show all entries
+        all_entries = data['entries']
+        print(f"Total entries found: {len(all_entries)}")
+        if all_entries:
+            print(f"Sample entries: {[(e.habit_id, e.date, e.value) for e in all_entries[:3]]}")
+            print(f"Date range in entries: {min(e.date for e in all_entries)} to {max(e.date for e in all_entries)}")
+        
         # Get last 7 days of entries
         today = datetime.now().date()
         week_ago = today - timedelta(days=6)
+        print(f"Looking for entries between {week_ago} and {today}")  # Debug
         
         # Filter entries to last 7 days
-        recent_entries = [e for e in data['entries'] 
-                         if e.date.date() >= week_ago and e.date.date() <= today]
+        recent_entries = []
+        for e in data['entries']:
+            # Handle both date and datetime objects
+            entry_date = e.date.date() if hasattr(e.date, 'date') else e.date
+            if week_ago <= entry_date <= today:
+                recent_entries.append(e)
+        
+        print(f"Recent entries (last 7 days): {len(recent_entries)}")  # Debug
         
         # Group entries by date
         entries_by_date = {}
@@ -397,3 +418,47 @@ def get_productivity_chart_30days() -> Dict[str, Any]:
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error loading 30-day productivity chart: {str(e)}")
+
+@router.get("/debug")
+def debug_data() -> Dict[str, Any]:
+    """Debug endpoint to check what data is being parsed"""
+    try:
+        excel_files = excel_service.find_excel_files()
+        if not excel_files:
+            return {"error": "No Excel files found", "data_path": str(excel_service.data_path)}
+        
+        file_path = excel_files[0]
+        data = excel_service.parse_excel_file(file_path)
+        
+        # Return summary of parsed data
+        habits_summary = []
+        for h in data['habits']:
+            habits_summary.append({
+                "id": h.id,
+                "name": h.name,
+                "type": h.habit_type,
+                "emoji": h.emoji
+            })
+        
+        entries_summary = []
+        for e in data['entries'][:10]:  # First 10 entries
+            entries_summary.append({
+                "habit_id": e.habit_id,
+                "date": str(e.date),
+                "value": e.value,
+                "completed": e.completed
+            })
+        
+        return {
+            "file_path": str(file_path),
+            "habits_count": len(data['habits']),
+            "entries_count": len(data['entries']),
+            "habits": habits_summary,
+            "sample_entries": entries_summary,
+            "time_habits": [h.name for h in data['habits'] if h.habit_type == 'time'],
+            "binary_habits": [h.name for h in data['habits'] if h.habit_type == 'binary'],
+            "description_habits": [h.name for h in data['habits'] if h.habit_type == 'description']
+        }
+        
+    except Exception as e:
+        return {"error": str(e), "traceback": str(e.__traceback__)}
