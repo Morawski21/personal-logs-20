@@ -32,6 +32,8 @@ class ExcelService:
             # System columns that should not be treated as habits (from old app)
             SYSTEM_COLUMNS = {'Data', 'WEEKDAY', 'Razem', 'Unnamed: 8', 'Unnamed: 18'}
             
+            print(f"System columns to exclude: {SYSTEM_COLUMNS}")  # Debug
+            
             print(f"Raw Excel columns: {list(df.columns)}")  # Debug
             print(f"DataFrame shape: {df.shape}")  # Debug
             
@@ -58,6 +60,7 @@ class ExcelService:
                            and not col.startswith('Unnamed')]
             
             print(f"Filtered habit columns: {habit_columns}")  # Debug
+            print(f"Columns excluded: {[col for col in df.columns if col != date_col and (col in SYSTEM_COLUMNS or col.startswith('Unnamed'))]}")  # Debug
             
             habits = []
             entries = []

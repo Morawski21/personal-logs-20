@@ -111,7 +111,6 @@ export default function Home() {
           <Analytics />
         ) : (
           <>
-            <DailyInsights habits={habits} />
             <HabitGrid habits={habits} />
             <ProductivityKPIs debugMode={debugMode} />
           </>

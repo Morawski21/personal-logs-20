@@ -135,10 +135,22 @@ def get_productivity_chart() -> Dict[str, Any]:
             print(f"Sample entries: {[(e.habit_id, e.date, e.value) for e in all_entries[:3]]}")
             print(f"Date range in entries: {min(e.date for e in all_entries)} to {max(e.date for e in all_entries)}")
         
-        # Get last 7 days of entries
+        # Get last 7 days of entries - but if no recent data, get the most recent week
         today = datetime.now().date()
         week_ago = today - timedelta(days=6)
         print(f"Looking for entries between {week_ago} and {today}")  # Debug
+        
+        # If no entries in last 7 days, find the most recent entries
+        all_entry_dates = [e.date.date() if hasattr(e.date, 'date') else e.date for e in data['entries']]
+        if all_entry_dates:
+            most_recent_date = max(all_entry_dates)
+            most_recent_week_start = most_recent_date - timedelta(days=6)
+            print(f"Most recent entry date: {most_recent_date}")  # Debug
+            print(f"Using date range: {most_recent_week_start} to {most_recent_date}")  # Debug
+            
+            # Use most recent week if current week has no data
+            week_ago = most_recent_week_start
+            today = most_recent_date
         
         # Filter entries to last 7 days
         recent_entries = []
@@ -149,6 +161,13 @@ def get_productivity_chart() -> Dict[str, Any]:
                 recent_entries.append(e)
         
         print(f"Recent entries (last 7 days): {len(recent_entries)}")  # Debug
+        
+        # Debug: Show recent time habit entries
+        time_habit_ids = [h.id for h in time_habits]
+        recent_time_entries = [e for e in recent_entries if e.habit_id in time_habit_ids]
+        print(f"Recent time habit entries: {len(recent_time_entries)}")  # Debug
+        if recent_time_entries:
+            print(f"Sample recent time entries: {[(e.habit_id, e.date, e.value) for e in recent_time_entries[:5]]}")  # Debug
         
         # Group entries by date
         entries_by_date = {}
@@ -341,9 +360,19 @@ def get_productivity_chart_30days() -> Dict[str, Any]:
                 productivity_categories[category] = []
             productivity_categories[category].append(habit)
         
-        # Get last 30 days entries
+        # Get last 30 days entries - but if no recent data, get the most recent month
         today = datetime.now().date()
         month_ago = today - timedelta(days=29)
+        
+        # If no entries in last 30 days, find the most recent entries
+        all_entry_dates = [e.date.date() if hasattr(e.date, 'date') else e.date for e in data['entries']]
+        if all_entry_dates:
+            most_recent_date = max(all_entry_dates)
+            most_recent_month_start = most_recent_date - timedelta(days=29)
+            
+            # Use most recent month if current month has no data
+            month_ago = most_recent_month_start
+            today = most_recent_date
         
         # Filter entries to last 30 days
         recent_entries = [e for e in data['entries'] 
@@ -449,6 +478,10 @@ def debug_data() -> Dict[str, Any]:
                 "completed": e.completed
             })
         
+        # Check if we have recent entries
+        all_entry_dates = [e.date.date() if hasattr(e.date, 'date') else e.date for e in data['entries']]
+        most_recent_date = max(all_entry_dates) if all_entry_dates else None
+        
         return {
             "file_path": str(file_path),
             "habits_count": len(data['habits']),
@@ -457,7 +490,9 @@ def debug_data() -> Dict[str, Any]:
             "sample_entries": entries_summary,
             "time_habits": [h.name for h in data['habits'] if h.habit_type == 'time'],
             "binary_habits": [h.name for h in data['habits'] if h.habit_type == 'binary'],
-            "description_habits": [h.name for h in data['habits'] if h.habit_type == 'description']
+            "description_habits": [h.name for h in data['habits'] if h.habit_type == 'description'],
+            "most_recent_entry_date": str(most_recent_date) if most_recent_date else None,
+            "days_since_last_entry": (datetime.now().date() - most_recent_date).days if most_recent_date else None
         }
         
     except Exception as e:
