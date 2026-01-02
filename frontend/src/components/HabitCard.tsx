@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { Lock, Star, Flame, Trophy, GripVertical, Sparkles } from 'lucide-react'
+import { Star, Flame, Trophy, GripVertical, Sparkles } from 'lucide-react'
 import type { Habit } from '@/types/habit'
 import { cn } from '@/lib/utils'
 
@@ -126,11 +126,6 @@ export function HabitCard({ habit, className }: HabitCardProps) {
       >
         <GripVertical className="h-3 w-3 text-white/60" />
       </div>
-
-      {/* Personal Habit Lock */}
-      {habit.is_personal && !isRevealed && (
-        <Lock className="absolute top-2 right-2 h-4 w-4 text-slate-400 opacity-60 z-10" />
-      )}
 
       {/* Name and Progress */}
       <div className="flex-1 min-w-0">

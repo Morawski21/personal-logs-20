@@ -10,6 +10,7 @@ import { ProductivityKPIs } from '@/components/ProductivityKPIs'
 import { DailyInsights } from '@/components/DailyInsights'
 import { StreakNotifications } from '@/components/StreakNotifications'
 import { ActivityChart30Days } from '@/components/ActivityChart30Days'
+import { ExerciseActivity } from '@/components/ExerciseActivity'
 import { useHabitStore } from '@/stores/habitStore'
 import type { Habit } from '@/types/habit'
 
@@ -23,7 +24,27 @@ export default function Home() {
   }, [])
 
   if (loading) {
-    return <LoadingSkeleton />
+    return (
+      <div className="min-h-screen relative overflow-hidden" style={{ backgroundColor: '#0f1419' }}>
+        <div className="absolute inset-0 bg-gradient-to-br from-[#0f1419] via-[#1a1f2e] to-[#0f1419]">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_40%,rgba(59,130,246,0.05),transparent_70%)]" />
+        </div>
+        <div className="relative z-10">
+          <Header
+            onToggleSettings={() => setShowSettings(!showSettings)}
+            onToggleDebug={() => setDebugMode(!debugMode)}
+            debugMode={debugMode}
+          />
+          <div className="container mx-auto px-4 py-4">
+            <div className="rounded-xl p-6 backdrop-blur-sm animate-pulse" style={{ backgroundColor: '#1a1f2e', borderColor: '#2a3441', borderWidth: '1px' }}>
+              <div className="h-8 w-48 rounded" style={{ backgroundColor: '#2a3441' }}></div>
+              <div className="h-4 w-64 rounded mt-2" style={{ backgroundColor: '#2a3441' }}></div>
+              <div className="h-64 rounded mt-4" style={{ backgroundColor: '#2a3441' }}></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   if (error) {
@@ -70,6 +91,9 @@ export default function Home() {
           <div className="container mx-auto px-4 py-4 space-y-4">
             {/* 30-day Activity Chart with metrics */}
             <ActivityChart30Days />
+
+            {/* Exercise Activity Panel */}
+            <ExerciseActivity />
 
             {/* Habit Cards Grid */}
             <HabitGrid habits={habits} />

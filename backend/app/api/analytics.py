@@ -470,6 +470,64 @@ def debug_data() -> Dict[str, Any]:
     except Exception as e:
         return {"error": str(e), "traceback": str(e.__traceback__)}
 
+@router.get("/recent-workouts")
+def get_recent_workouts() -> Dict[str, Any]:
+    """Get recent workout data with grades"""
+    try:
+        excel_files = excel_service.find_excel_files()
+        if not excel_files:
+            return {"workouts": []}
+
+        file_path = excel_files[0]
+        data = excel_service.parse_excel_file(file_path)
+
+        # Find workout grade habit (looking for A-F grading pattern)
+        workout_habits = [h for h in data['habits'] if 'workout' in h.name.lower() or 'grade' in h.name.lower()]
+
+        if not workout_habits:
+            return {"workouts": []}
+
+        workout_habit_ids = [h.id for h in workout_habits]
+
+        # Get entries for workout habits
+        workout_entries = [e for e in data['entries'] if e.habit_id in workout_habit_ids]
+
+        # Sort by date descending
+        workout_entries.sort(key=lambda e: e.date.date() if hasattr(e.date, 'date') else e.date, reverse=True)
+
+        # Build workout list
+        workouts = []
+        for entry in workout_entries[:7]:  # Last 7 days
+            date_obj = entry.date.date() if hasattr(entry.date, 'date') else entry.date
+
+            workout = {
+                "date": date_obj.strftime("%Y-%m-%d"),
+                "type": "Cardio Training",  # Default type
+                "duration": 0,
+                "grade": entry.value if entry.value and entry.value not in ['NA', 'nan', None, ''] else None
+            }
+
+            # Try to get duration from time-based habits on same day
+            day_entries = [e for e in data['entries']
+                          if (e.date.date() if hasattr(e.date, 'date') else e.date) == date_obj]
+
+            for day_entry in day_entries:
+                habit = next((h for h in data['habits'] if h.id == day_entry.habit_id), None)
+                if habit and habit.habit_type == 'time':
+                    try:
+                        duration = float(day_entry.value) if day_entry.value not in ['NA', 'nan', None, ''] else 0
+                        if duration > 0:
+                            workout["duration"] += duration
+                    except (ValueError, TypeError):
+                        pass
+
+            workouts.append(workout)
+
+        return {"workouts": workouts}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error loading workout data: {str(e)}")
+
 @router.get("/calendar")
 def get_calendar_data(days: int = 14) -> List[Dict[str, Any]]:
     """Get calendar view data for last N days (default 14)"""

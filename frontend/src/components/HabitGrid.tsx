@@ -2,8 +2,8 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { 
-  DndContext, 
+import {
+  DndContext,
   closestCenter,
   KeyboardSensor,
   PointerSensor,
@@ -18,7 +18,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { HabitCard } from './HabitCard'
-import { Medal } from 'lucide-react'
+import { Medal, ChevronDown, ChevronUp } from 'lucide-react'
 import type { Habit } from '@/types/habit'
 import { cn } from '@/lib/utils'
 
@@ -26,10 +26,14 @@ interface HabitGridProps {
   habits: Habit[]
 }
 
+// Core habits that should always be prioritized
+const CORE_HABIT_NAMES = ['ynab', 'Anki']
+
 export function HabitGrid({ habits }: HabitGridProps) {
   // State for drag & drop
   const [localHabits, setLocalHabits] = useState(habits)
-  
+  const [showInactive, setShowInactive] = useState(false)
+
   // Update local state when habits prop changes
   useState(() => {
     setLocalHabits([...habits].sort((a, b) => a.order - b.order))
@@ -63,9 +67,20 @@ export function HabitGrid({ habits }: HabitGridProps) {
   const isPerfectDay = mainHabitsCompleted === mainHabits.length && mainHabits.length > 0
 
   // Separate into core, active, and inactive habits
-  // Core habits: top 3 by current streak
-  const sortedByStreak = [...localHabits].sort((a, b) => b.current_streak - a.current_streak)
-  const coreHabits = sortedByStreak.slice(0, Math.min(3, sortedByStreak.length))
+  // Core habits: predefined important habits + top streaks
+  const coreHabits = localHabits.filter(h =>
+    CORE_HABIT_NAMES.some(name => h.name.toLowerCase().includes(name.toLowerCase()))
+  )
+
+  // If less than 3 core habits, add top streaks
+  if (coreHabits.length < 3) {
+    const sortedByStreak = [...localHabits]
+      .filter(h => !coreHabits.some(core => core.id === h.id))
+      .sort((a, b) => b.current_streak - a.current_streak)
+    const additionalCore = sortedByStreak.slice(0, 3 - coreHabits.length)
+    coreHabits.push(...additionalCore)
+  }
+
   const coreHabitIds = new Set(coreHabits.map(h => h.id))
 
   const remainingHabits = localHabits.filter(h => !coreHabitIds.has(h.id))
@@ -131,14 +146,21 @@ export function HabitGrid({ habits }: HabitGridProps) {
               {/* Inactive Habits */}
               {inactiveHabits.length > 0 && (
                 <div>
-                  <h4 className="text-xs font-semibold mb-2 uppercase tracking-wider" style={{ color: '#6b7280' }}>
+                  <button
+                    onClick={() => setShowInactive(!showInactive)}
+                    className="flex items-center gap-2 text-xs font-semibold mb-2 uppercase tracking-wider transition-colors hover:opacity-80"
+                    style={{ color: '#6b7280' }}
+                  >
+                    {showInactive ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                     Inactive ({inactiveHabits.length})
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                    {inactiveHabits.map((habit) => (
-                      <HabitCard key={habit.id} habit={habit} />
-                    ))}
-                  </div>
+                  </button>
+                  {showInactive && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                      {inactiveHabits.map((habit) => (
+                        <HabitCard key={habit.id} habit={habit} />
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
