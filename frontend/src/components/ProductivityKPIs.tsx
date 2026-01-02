@@ -105,124 +105,92 @@ export function ProductivityKPIs({ debugMode = false }: ProductivityKPIsProps) {
   }
 
   return (
-    <motion.div
-      className="container mx-auto px-4 py-8 relative z-10"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-    >
+    <div>
       {/* Debug Header - Only visible in debug mode */}
       {debugMode && (
-        <div className="mb-4 p-4 bg-orange-500/20 border border-orange-500/30 rounded-lg">
-          <h2 className="text-white font-bold">🐛 Debug: ProductivityKPIs Component</h2>
-          <p className="text-white/80 text-sm">Loading: {loading ? 'Yes' : 'No'} | Metrics: {metrics ? 'Loaded' : 'None'}</p>
-          <p className="text-white/70 text-xs mt-1">API URL: {process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}</p>
+        <div className="mb-3 p-3 bg-orange-500/20 border border-orange-500/30 rounded-lg">
+          <h2 className="text-white font-bold text-sm">Debug: ProductivityKPIs Component</h2>
+          <p className="text-white/80 text-xs">Loading: {loading ? 'Yes' : 'No'} | Metrics: {metrics ? 'Loaded' : 'None'}</p>
+          <p className="text-white/70 text-xs">API URL: {process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}</p>
         </div>
       )}
 
       {/* KPIs Section */}
       {loading ? (
-        <div className="text-center text-white/60 py-8">Loading productivity insights...</div>
+        <div className="text-center text-white/60 py-4 text-sm">Loading productivity insights...</div>
       ) : metrics ? (
-        <div className="mb-8">
-          <motion.div
-            className="mb-6"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-          >
-            <h3 className="text-xl font-semibold bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent mb-2">
-              7-Day Productivity Insights
+        <div className="bg-slate-900/40 border border-slate-700/50 rounded-xl p-5 backdrop-blur-sm">
+          <div className="mb-4">
+            <h3 className="text-base font-semibold text-white/90">
+              7-Day Productivity
             </h3>
-            <p className="text-white/60 text-sm">Key metrics compared to previous period</p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Average Daily KPI */}
-            <motion.div
-              className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-500/20 rounded-2xl p-6 backdrop-blur-sm hover:shadow-xl hover:shadow-blue-500/20 transition-all duration-300 group"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              whileHover={{ scale: 1.05, y: -5 }}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl group-hover:scale-110 transition-transform duration-200">
-                  <Target className="h-6 w-6 text-white" />
-                </div>
-                <div className={`flex items-center gap-1 ${formatChange(metrics.avg_daily_productivity_change).color}`}>
-                  {React.createElement(formatChange(metrics.avg_daily_productivity_change).icon, { className: "h-4 w-4" })}
-                  <span className="text-sm font-bold">{formatChange(metrics.avg_daily_productivity_change).value}</span>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <h4 className="font-semibold text-white/90">Daily Average</h4>
-                <p className="text-3xl font-bold bg-gradient-to-r from-blue-300 to-cyan-300 bg-clip-text text-transparent">
-                  {formatTime(metrics.avg_daily_productivity)}
-                </p>
-                <p className="text-sm text-white/60">Consistent progress builds success</p>
-              </div>
-            </motion.div>
-
-            {/* Peak Day KPI */}
-            <motion.div
-              className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-2xl p-6 backdrop-blur-sm hover:shadow-xl hover:shadow-purple-500/20 transition-all duration-300 group"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              whileHover={{ scale: 1.05, y: -5 }}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl group-hover:scale-110 transition-transform duration-200">
-                  <Zap className="h-6 w-6 text-white" />
-                </div>
-                <div className={`flex items-center gap-1 ${formatChange(metrics.max_daily_productivity_change).color}`}>
-                  {React.createElement(formatChange(metrics.max_daily_productivity_change).icon, { className: "h-4 w-4" })}
-                  <span className="text-sm font-bold">{formatChange(metrics.max_daily_productivity_change).value}</span>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <h4 className="font-semibold text-white/90">Peak Performance</h4>
-                <p className="text-3xl font-bold bg-gradient-to-r from-purple-300 to-pink-300 bg-clip-text text-transparent">
-                  {formatTime(metrics.max_daily_productivity)}
-                </p>
-                <p className="text-sm text-white/60">Your potential in action</p>
-              </div>
-            </motion.div>
-
-            {/* Total Hours KPI */}
-            <motion.div
-              className="bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 rounded-2xl p-6 backdrop-blur-sm hover:shadow-xl hover:shadow-emerald-500/20 transition-all duration-300 group"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-              whileHover={{ scale: 1.05, y: -5 }}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-xl group-hover:scale-110 transition-transform duration-200">
-                  <Clock className="h-6 w-6 text-white" />
-                </div>
-                <div className={`flex items-center gap-1 ${formatChange(metrics.total_productive_hours_change).color}`}>
-                  {React.createElement(formatChange(metrics.total_productive_hours_change).icon, { className: "h-4 w-4" })}
-                  <span className="text-sm font-bold">{formatChange(metrics.total_productive_hours_change).value}</span>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <h4 className="font-semibold text-white/90">Total Investment</h4>
-                <p className="text-3xl font-bold bg-gradient-to-r from-emerald-300 to-teal-300 bg-clip-text text-transparent">
-                  {metrics.total_productive_hours.toFixed(1)}h
-                </p>
-                <p className="text-sm text-white/60">Time invested in growth</p>
-              </div>
-            </motion.div>
+            <p className="text-white/60 text-xs">Compared to previous period</p>
           </div>
 
+          <div className="grid grid-cols-3 gap-4">
+            {/* Average Daily KPI */}
+            <div className="bg-slate-800/40 border border-slate-700/40 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-2">
+                <div className="p-2 bg-blue-500/20 rounded-lg">
+                  <Target className="h-4 w-4 text-blue-400" />
+                </div>
+                <div className={`flex items-center gap-1 text-xs ${formatChange(metrics.avg_daily_productivity_change).color}`}>
+                  {React.createElement(formatChange(metrics.avg_daily_productivity_change).icon, { className: "h-3 w-3" })}
+                  <span className="font-semibold">{formatChange(metrics.avg_daily_productivity_change).value}</span>
+                </div>
+              </div>
+              <div>
+                <h4 className="text-xs text-white/70 mb-1">Daily Average</h4>
+                <p className="text-xl font-bold text-blue-400">
+                  {formatTime(metrics.avg_daily_productivity)}
+                </p>
+              </div>
+            </div>
+
+            {/* Peak Day KPI */}
+            <div className="bg-slate-800/40 border border-slate-700/40 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-2">
+                <div className="p-2 bg-purple-500/20 rounded-lg">
+                  <Zap className="h-4 w-4 text-purple-400" />
+                </div>
+                <div className={`flex items-center gap-1 text-xs ${formatChange(metrics.max_daily_productivity_change).color}`}>
+                  {React.createElement(formatChange(metrics.max_daily_productivity_change).icon, { className: "h-3 w-3" })}
+                  <span className="font-semibold">{formatChange(metrics.max_daily_productivity_change).value}</span>
+                </div>
+              </div>
+              <div>
+                <h4 className="text-xs text-white/70 mb-1">Peak Day</h4>
+                <p className="text-xl font-bold text-purple-400">
+                  {formatTime(metrics.max_daily_productivity)}
+                </p>
+              </div>
+            </div>
+
+            {/* Total Hours KPI */}
+            <div className="bg-slate-800/40 border border-slate-700/40 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-2">
+                <div className="p-2 bg-emerald-500/20 rounded-lg">
+                  <Clock className="h-4 w-4 text-emerald-400" />
+                </div>
+                <div className={`flex items-center gap-1 text-xs ${formatChange(metrics.total_productive_hours_change).color}`}>
+                  {React.createElement(formatChange(metrics.total_productive_hours_change).icon, { className: "h-3 w-3" })}
+                  <span className="font-semibold">{formatChange(metrics.total_productive_hours_change).value}</span>
+                </div>
+              </div>
+              <div>
+                <h4 className="text-xs text-white/70 mb-1">Total Hours</h4>
+                <p className="text-xl font-bold text-emerald-400">
+                  {metrics.total_productive_hours.toFixed(1)}h
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       ) : (
-        <div className="text-center text-white/60 py-8">
+        <div className="text-center text-white/60 py-4 text-sm">
           No productivity metrics available
         </div>
       )}
-    </motion.div>
+    </div>
   )
 }

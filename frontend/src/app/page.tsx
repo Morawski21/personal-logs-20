@@ -10,6 +10,7 @@ import { LoadingSkeleton } from '@/components/LoadingSkeleton'
 import { ProductivityKPIs } from '@/components/ProductivityKPIs'
 import { DailyInsights } from '@/components/DailyInsights'
 import { StreakNotifications } from '@/components/StreakNotifications'
+import { ActivityChart30Days } from '@/components/ActivityChart30Days'
 import { useHabitStore } from '@/stores/habitStore'
 import type { Habit } from '@/types/habit'
 
@@ -51,48 +52,16 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
-      {/* Animated cosmic background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-black via-gray-950 to-black">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_40%,rgba(139,92,246,0.08),transparent_70%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_20%,rgba(6,182,212,0.04),transparent_50%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_80%,rgba(16,185,129,0.03),transparent_50%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_70%,rgba(236,72,153,0.05),transparent_60%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(139,92,246,0.03),transparent_80%)]" />
+    <div className="min-h-screen relative overflow-hidden bg-slate-950">
+      {/* Simplified background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_40%,rgba(71,85,105,0.15),transparent_70%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_60%,rgba(51,65,85,0.1),transparent_60%)]" />
       </div>
 
-      {/* Floating cosmic particles */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(15)].map((_, i) => (
-          <motion.div
-            key={i}
-            className="absolute w-1 h-1 bg-white/30 rounded-full"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-            }}
-            animate={{
-              y: [-20, -80, -20],
-              x: [0, 30, 0],
-              opacity: [0, 1, 0],
-              scale: [0, 1, 0],
-            }}
-            transition={{
-              duration: 4 + Math.random() * 2,
-              repeat: Infinity,
-              delay: Math.random() * 3,
-              ease: "easeInOut",
-            }}
-          />
-        ))}
-      </div>
-
-      {/* Mesh gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40 pointer-events-none" />
-      
       {/* Content */}
       <div className="relative z-10">
-        <Header 
+        <Header
           onToggleAnalytics={() => {
             setShowAnalytics(!showAnalytics)
             setShowSettings(false)
@@ -104,18 +73,24 @@ export default function Home() {
           onToggleDebug={() => setDebugMode(!debugMode)}
           debugMode={debugMode}
         />
-        
+
         {showSettings ? (
           <Settings />
         ) : showAnalytics ? (
           <Analytics />
         ) : (
-          <>
-            <HabitGrid habits={habits} />
+          <div className="container mx-auto px-4 py-4 space-y-4">
+            {/* 30-day Activity Chart */}
+            <ActivityChart30Days />
+
+            {/* Productivity KPIs - More Compact */}
             <ProductivityKPIs debugMode={debugMode} />
-          </>
+
+            {/* Habit Cards Grid */}
+            <HabitGrid habits={habits} />
+          </div>
         )}
-        
+
         {/* Streak Notifications */}
         <StreakNotifications habits={habits} />
       </div>
