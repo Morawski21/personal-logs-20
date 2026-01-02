@@ -49,10 +49,10 @@ export function SelfcareBox() {
   if (loading) {
     return (
       <div className="rounded-xl p-3 backdrop-blur-sm animate-pulse" style={{ backgroundColor: '#1a1f2e', borderColor: '#2a3441', borderWidth: '1px' }}>
-        <div className="h-5 w-24 rounded mb-3" style={{ backgroundColor: '#2a3441' }}></div>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="h-5 w-24 rounded mb-2" style={{ backgroundColor: '#2a3441' }}></div>
+        <div className="space-y-1.5">
           {[1,2,3,4,5,6].map(i => (
-            <div key={i} className="h-14 rounded" style={{ backgroundColor: '#2a3441' }}></div>
+            <div key={i} className="h-10 rounded" style={{ backgroundColor: '#2a3441' }}></div>
           ))}
         </div>
       </div>
@@ -60,13 +60,13 @@ export function SelfcareBox() {
   }
 
   return (
-    <div className="rounded-xl p-3 backdrop-blur-sm" style={{ backgroundColor: '#1a1f2e', borderColor: '#2a3441', borderWidth: '1px' }}>
-      <h3 className="text-sm font-semibold mb-3" style={{ color: '#f9fafb' }}>
+    <div className="rounded-xl p-3 backdrop-blur-sm h-full" style={{ backgroundColor: '#1a1f2e', borderColor: '#2a3441', borderWidth: '1px' }}>
+      <h3 className="text-sm font-semibold mb-2" style={{ color: '#f9fafb' }}>
         Self-Care
       </h3>
 
       {activities.length > 0 ? (
-        <div className="grid grid-cols-3 gap-2">
+        <div className="space-y-1.5">
           {activities.map((activity, index) => {
             const IconComponent = getActivityIcon(activity.icon)
 
@@ -84,22 +84,22 @@ export function SelfcareBox() {
             return (
               <div
                 key={index}
-                className="relative rounded p-2 flex flex-col items-center justify-center text-center transition-all duration-200 hover:scale-105"
+                className="relative rounded px-2 py-1.5 flex items-center gap-2 transition-all duration-200 hover:scale-105"
                 style={{
                   backgroundColor: 'rgba(42, 52, 65, 0.5)',
                   border: `1px solid ${daysColor}40`,
                 }}
               >
                 {/* Icon */}
-                <IconComponent className="h-4 w-4 mb-1" style={{ color: daysColor }} />
+                <IconComponent className="h-4 w-4 flex-shrink-0" style={{ color: daysColor }} />
 
                 {/* Name */}
-                <div className="text-[10px] font-medium mb-0.5 leading-tight" style={{ color: '#f9fafb' }}>
+                <div className="text-[10px] font-medium flex-1 leading-tight" style={{ color: '#f9fafb' }}>
                   {activity.name}
                 </div>
 
                 {/* Days since last */}
-                <div className="text-[10px] font-semibold" style={{ color: daysColor }}>
+                <div className="text-[10px] font-semibold flex-shrink-0" style={{ color: daysColor }}>
                   {activity.days_since_last !== null && activity.days_since_last !== undefined
                     ? activity.days_since_last === 0
                       ? 'Today'

@@ -12,6 +12,7 @@ import { StreakNotifications } from '@/components/StreakNotifications'
 import { ActivityChart30Days } from '@/components/ActivityChart30Days'
 import { ExerciseActivity } from '@/components/ExerciseActivity'
 import { SelfcareBox } from '@/components/SelfcareBox'
+import { DailyHabits } from '@/components/DailyHabits'
 import { useHabitStore } from '@/stores/habitStore'
 import type { Habit } from '@/types/habit'
 
@@ -90,20 +91,27 @@ export default function Home() {
           <Settings />
         ) : (
           <div className="container mx-auto px-4 py-4 space-y-4">
-            {/* 30-day Activity Chart with metrics */}
+            {/* 1. Productivity - 30-day Activity Chart with metrics */}
             <ActivityChart30Days />
 
-            {/* Self-care & Training Row */}
-            <div className="grid grid-cols-2 gap-4">
-              {/* Selfcare Box - 1/2 width */}
-              <SelfcareBox />
-
-              {/* Exercise Activity Table - 1/2 width */}
-              <ExerciseActivity />
-            </div>
-
-            {/* Habit Cards Grid */}
+            {/* 2. Habits - Habit Cards Grid */}
             <HabitGrid habits={habits} />
+
+            {/* 3. Daily Habits - Minimal daily trackers */}
+            <DailyHabits habits={habits} />
+
+            {/* 4. Self-care & Training Row */}
+            <div className="grid grid-cols-4 gap-4">
+              {/* Selfcare Box - 1/4 width */}
+              <div className="col-span-1">
+                <SelfcareBox />
+              </div>
+
+              {/* Exercise Activity Table - 3/4 width */}
+              <div className="col-span-3">
+                <ExerciseActivity />
+              </div>
+            </div>
           </div>
         )}
 

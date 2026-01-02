@@ -4,6 +4,7 @@ export interface Habit {
   id: string
   name: string
   emoji: string
+  icon?: string
   habit_type: HabitType
   category?: string
   color?: string

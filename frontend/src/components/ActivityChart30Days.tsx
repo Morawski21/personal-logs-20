@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceLine } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts'
 
 interface ChartDataPoint {
   date: string
@@ -156,7 +156,7 @@ export function ActivityChart30Days() {
         </div>
       </div>
 
-      <ResponsiveContainer width="100%" height={280}>
+      <ResponsiveContainer width="100%" height={320}>
         <BarChart data={data.chart_data} margin={{ top: 10, right: 10, left: 0, bottom: 40 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
           <XAxis
@@ -174,12 +174,6 @@ export function ActivityChart30Days() {
             label={{ value: 'Minutes', angle: -90, position: 'insideLeft', fill: '#9ca3af', fontSize: 12 }}
           />
           <Tooltip content={<CustomTooltip />} />
-          <Legend
-            wrapperStyle={{ paddingTop: '4px', fontSize: '11px' }}
-            iconType="rect"
-            iconSize={8}
-            formatter={(value) => <span style={{ color: '#d1d5db', fontSize: '10px' }}>{value}</span>}
-          />
           {data.chart_data.map((point, index) =>
             point.isWeekStart && index > 0 ? (
               <ReferenceLine
