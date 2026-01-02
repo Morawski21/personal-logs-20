@@ -62,9 +62,15 @@ export function HabitGrid({ habits }: HabitGridProps) {
   const mainHabitsCompleted = mainHabits.filter(habit => habit.completed_today).length
   const isPerfectDay = mainHabitsCompleted === mainHabits.length && mainHabits.length > 0
 
-  // Separate active and inactive habits
-  const activeHabits = localHabits.filter(habit => habit.current_streak > 0)
-  const inactiveHabits = localHabits.filter(habit => habit.current_streak === 0)
+  // Separate into core, active, and inactive habits
+  // Core habits: top 3 by current streak
+  const sortedByStreak = [...localHabits].sort((a, b) => b.current_streak - a.current_streak)
+  const coreHabits = sortedByStreak.slice(0, Math.min(3, sortedByStreak.length))
+  const coreHabitIds = new Set(coreHabits.map(h => h.id))
+
+  const remainingHabits = localHabits.filter(h => !coreHabitIds.has(h.id))
+  const activeHabits = remainingHabits.filter(habit => habit.current_streak > 0)
+  const inactiveHabits = remainingHabits.filter(habit => habit.current_streak === 0)
 
   return (
     <DndContext
@@ -76,16 +82,16 @@ export function HabitGrid({ habits }: HabitGridProps) {
         items={localHabits.map(h => h.id)}
         strategy={verticalListSortingStrategy}
       >
-        <div className="bg-slate-900/40 border border-slate-700/50 rounded-xl p-5 backdrop-blur-sm">
+        <div className="rounded-xl p-5 backdrop-blur-sm" style={{ backgroundColor: '#1a1f2e', borderColor: '#2a3441', borderWidth: '1px' }}>
           <div className="mb-4 flex items-center justify-between">
             <div>
-              <h3 className="text-base font-semibold text-white/90">Habits</h3>
-              <p className="text-xs text-white/60">
-                {mainHabitsCompleted} of {mainHabits.length} completed today • {activeHabits.length} active
+              <h3 className="text-base font-semibold" style={{ color: '#f9fafb' }}>Habits</h3>
+              <p className="text-xs" style={{ color: '#9ca3af' }}>
+                {mainHabitsCompleted} of {mainHabits.length} completed today • {coreHabits.length + activeHabits.length} active
               </p>
             </div>
             {isPerfectDay && (
-              <div className="flex items-center gap-2 text-sm font-semibold text-amber-400">
+              <div className="flex items-center gap-2 text-sm font-semibold" style={{ color: '#f59e0b' }}>
                 <Medal className="h-5 w-5" />
                 <span>Perfect Day!</span>
               </div>
@@ -93,11 +99,25 @@ export function HabitGrid({ habits }: HabitGridProps) {
           </div>
 
           {localHabits.length > 0 ? (
-            <div className="space-y-4">
+            <div className="space-y-5">
+              {/* Core Habits */}
+              {coreHabits.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-semibold mb-2 uppercase tracking-wider" style={{ color: '#10b981' }}>
+                    Core Habits ({coreHabits.length})
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {coreHabits.map((habit) => (
+                      <HabitCard key={habit.id} habit={habit} />
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Active Habits */}
               {activeHabits.length > 0 && (
                 <div>
-                  <h4 className="text-xs font-semibold text-emerald-400/80 mb-2 uppercase tracking-wider">
+                  <h4 className="text-xs font-semibold mb-2 uppercase tracking-wider" style={{ color: '#f59e0b' }}>
                     Active Streaks ({activeHabits.length})
                   </h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
@@ -111,7 +131,7 @@ export function HabitGrid({ habits }: HabitGridProps) {
               {/* Inactive Habits */}
               {inactiveHabits.length > 0 && (
                 <div>
-                  <h4 className="text-xs font-semibold text-slate-500/80 mb-2 uppercase tracking-wider">
+                  <h4 className="text-xs font-semibold mb-2 uppercase tracking-wider" style={{ color: '#6b7280' }}>
                     Inactive ({inactiveHabits.length})
                   </h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
@@ -123,9 +143,9 @@ export function HabitGrid({ habits }: HabitGridProps) {
               )}
             </div>
           ) : (
-            <div className="text-center text-white/60 py-8">
+            <div className="text-center py-8" style={{ color: '#9ca3af' }}>
               <p className="text-sm">No habits found</p>
-              <p className="text-xs mt-2 text-white/40">Add Excel files to the data directory</p>
+              <p className="text-xs mt-2" style={{ color: '#6b7280' }}>Add Excel files to the data directory</p>
             </div>
           )}
         </div>

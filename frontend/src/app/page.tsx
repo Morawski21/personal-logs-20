@@ -50,11 +50,10 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-slate-950">
+    <div className="min-h-screen relative overflow-hidden" style={{ backgroundColor: '#0f1419' }}>
       {/* Simplified background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_40%,rgba(71,85,105,0.15),transparent_70%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_60%,rgba(51,65,85,0.1),transparent_60%)]" />
+      <div className="absolute inset-0 bg-gradient-to-br from-[#0f1419] via-[#1a1f2e] to-[#0f1419]">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_40%,rgba(59,130,246,0.05),transparent_70%)]" />
       </div>
 
       {/* Content */}
@@ -69,11 +68,8 @@ export default function Home() {
           <Settings />
         ) : (
           <div className="container mx-auto px-4 py-4 space-y-4">
-            {/* 30-day Activity Chart */}
+            {/* 30-day Activity Chart with metrics */}
             <ActivityChart30Days />
-
-            {/* Productivity KPIs - More Compact */}
-            <ProductivityKPIs debugMode={debugMode} />
 
             {/* Habit Cards Grid */}
             <HabitGrid habits={habits} />

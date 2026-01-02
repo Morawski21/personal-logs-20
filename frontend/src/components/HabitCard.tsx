@@ -68,37 +68,46 @@ export function HabitCard({ habit, className }: HabitCardProps) {
 
   const achievement = getAchievementBadge()
 
-  // Simplified card styles
-  const getCardBackground = () => {
-    if (isRecordBreaking) {
-      return "bg-slate-800/60"
+  // Status-based color coding
+  const getCardStyles = () => {
+    if (habit.current_streak > 7) {
+      // Active streak (>7 days) - Emerald green
+      return {
+        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+        borderColor: 'rgba(16, 185, 129, 0.3)',
+        streakColor: '#10b981'
+      }
+    } else if (habit.current_streak >= 1) {
+      // Building streak (1-7 days) - Amber
+      return {
+        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+        borderColor: 'rgba(245, 158, 11, 0.3)',
+        streakColor: '#f59e0b'
+      }
+    } else {
+      // Broken/zero - Neutral gray
+      return {
+        backgroundColor: 'rgba(26, 31, 46, 0.8)',
+        borderColor: '#2a3441',
+        streakColor: '#6b7280'
+      }
     }
-    if (isActive) {
-      return "bg-slate-800/50"
-    }
-    return "bg-slate-900/50"
   }
 
-  const getBorderColor = () => {
-    if (isRecordBreaking) {
-      return "border-amber-500/40"
-    }
-    if (isActive) {
-      return "border-emerald-500/40"
-    }
-    return "border-slate-700/40"
-  }
+  const cardStyles = getCardStyles()
 
   return (
     <motion.div
       ref={setNodeRef}
-      style={style}
+      style={{
+        ...style,
+        backgroundColor: cardStyles.backgroundColor,
+        borderColor: cardStyles.borderColor
+      }}
       className={cn(
         "relative rounded-lg p-4 overflow-hidden cursor-pointer group",
         "h-24 flex items-center gap-3 transition-all duration-300",
         "backdrop-blur-sm border",
-        getCardBackground(),
-        getBorderColor(),
         isDragging && "opacity-50 z-50 scale-105",
         className
       )}
@@ -126,11 +135,12 @@ export function HabitCard({ habit, className }: HabitCardProps) {
       {/* Name and Progress */}
       <div className="flex-1 min-w-0">
         <h3 className={cn(
-          "text-sm font-semibold text-white/90 truncate mb-1",
+          "text-sm font-semibold truncate mb-1",
           habit.is_personal && !isRevealed && "select-none"
-        )}>
+        )}
+        style={{ color: '#f9fafb' }}>
           {habit.is_personal && !isRevealed ? (
-            <span className="text-slate-400">PRIVATE</span>
+            <span style={{ color: '#6b7280' }}>PRIVATE</span>
           ) : (
             habit.name
           )}
@@ -141,35 +151,31 @@ export function HabitCard({ habit, className }: HabitCardProps) {
       {/* Streaks */}
       <div className="flex items-center gap-3 flex-shrink-0">
         <div className="text-center">
-          <p className="text-xs text-white/50">Current</p>
-          <p className={cn(
-            "text-lg font-bold",
-            isRecordBreaking ? "text-amber-400" : "text-white/90"
-          )}>
+          <p className="text-xs" style={{ color: '#9ca3af' }}>Current</p>
+          <p className="text-lg font-bold" style={{ color: cardStyles.streakColor }}>
             {habit.current_streak}
           </p>
         </div>
 
         <div className="text-center">
-          <p className="text-xs text-white/50">Best</p>
-          <p className="text-lg font-bold text-amber-500/80">
+          <p className="text-xs" style={{ color: '#9ca3af' }}>Best</p>
+          <p className="text-lg font-bold" style={{ color: '#9ca3af' }}>
             {habit.best_streak}
           </p>
         </div>
 
         {/* Today Status */}
         <div
-          className={cn(
-            "w-10 h-10 rounded-lg flex items-center justify-center border transition-all duration-300",
-            habit.completed_today
-              ? "bg-emerald-500/20 border-emerald-500/50"
-              : "bg-slate-800/30 border-slate-600/40"
-          )}
+          className="w-10 h-10 rounded-lg flex items-center justify-center border transition-all duration-300"
+          style={{
+            backgroundColor: habit.completed_today ? 'rgba(16, 185, 129, 0.2)' : 'rgba(107, 114, 128, 0.1)',
+            borderColor: habit.completed_today ? 'rgba(16, 185, 129, 0.5)' : '#2a3441'
+          }}
         >
           {habit.completed_today ? (
-            <span className="text-emerald-400 text-lg font-bold">✓</span>
+            <span className="text-lg font-bold" style={{ color: '#10b981' }}>✓</span>
           ) : (
-            <span className="text-slate-500 text-lg">◯</span>
+            <span className="text-lg" style={{ color: '#6b7280' }}>◯</span>
           )}
         </div>
       </div>

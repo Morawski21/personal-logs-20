@@ -18,12 +18,19 @@ interface ActivityChartData {
   category_colors: { [key: string]: string }
 }
 
+interface ProductivityMetrics {
+  avg_daily_productivity: number
+  total_productive_hours: number
+}
+
 export function ActivityChart30Days() {
   const [data, setData] = useState<ActivityChartData | null>(null)
+  const [metrics, setMetrics] = useState<ProductivityMetrics | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     fetchData()
+    fetchMetrics()
   }, [])
 
   const fetchData = async () => {
@@ -47,9 +54,18 @@ export function ActivityChart30Days() {
           }
         })
 
+        const updatedColors = {
+          'Tech + Praca': '#3b82f6',
+          'YouTube': '#ff4d6b',
+          'Gitara': '#a855f7',
+          'Czytanie': '#10b981',
+          'Inne': '#f59e0b'
+        }
+
         setData({
           ...chartData,
-          chart_data: processedChartData
+          chart_data: processedChartData,
+          category_colors: updatedColors
         })
       } else {
         console.error('Failed to fetch 30-day chart data')
@@ -61,18 +77,45 @@ export function ActivityChart30Days() {
     }
   }
 
+  const fetchMetrics = async () => {
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+      const response = await fetch(`${apiUrl}/api/analytics/productivity-metrics`)
+
+      if (response.ok) {
+        const metricsData = await response.json()
+        setMetrics({
+          avg_daily_productivity: metricsData.avg_daily_productivity,
+          total_productive_hours: metricsData.total_productive_hours
+        })
+      }
+    } catch (error) {
+      console.error('Error fetching metrics:', error)
+    }
+  }
+
+  const formatTime = (minutes: number) => {
+    const roundedMinutes = Math.round(minutes)
+    if (roundedMinutes >= 60) {
+      const hours = Math.floor(roundedMinutes / 60)
+      const mins = roundedMinutes % 60
+      return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`
+    }
+    return `${roundedMinutes}m`
+  }
+
   if (loading) {
     return (
-      <div className="bg-slate-900/40 border border-slate-700/50 rounded-xl p-6 backdrop-blur-sm">
-        <div className="text-white/60 text-center">Loading activity data...</div>
+      <div className="rounded-xl p-6 backdrop-blur-sm" style={{ backgroundColor: '#1a1f2e', borderColor: '#2a3441', borderWidth: '1px' }}>
+        <div className="text-center" style={{ color: '#9ca3af' }}>Loading activity data...</div>
       </div>
     )
   }
 
   if (!data || !data.chart_data || data.chart_data.length === 0) {
     return (
-      <div className="bg-slate-900/40 border border-slate-700/50 rounded-xl p-6 backdrop-blur-sm">
-        <div className="text-white/60 text-center">No activity data available</div>
+      <div className="rounded-xl p-6 backdrop-blur-sm" style={{ backgroundColor: '#1a1f2e', borderColor: '#2a3441', borderWidth: '1px' }}>
+        <div className="text-center" style={{ color: '#9ca3af' }}>No activity data available</div>
       </div>
     )
   }
@@ -99,12 +142,18 @@ export function ActivityChart30Days() {
   }
 
   return (
-    <div className="bg-slate-900/40 border border-slate-700/50 rounded-xl p-6 backdrop-blur-sm">
-      <div className="mb-4">
-        <h3 className="text-lg font-semibold text-white/90">
-          Last 30 Days Activity
-        </h3>
-        <p className="text-white/60 text-sm">Activity minutes by category</p>
+    <div className="rounded-xl p-6 backdrop-blur-sm" style={{ backgroundColor: '#1a1f2e', borderColor: '#2a3441', borderWidth: '1px' }}>
+      <div className="mb-4 flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold" style={{ color: '#f9fafb' }}>
+            Last 30 Days Activity
+          </h3>
+          {metrics && (
+            <p className="text-sm mt-1" style={{ color: '#9ca3af' }}>
+              {metrics.total_productive_hours.toFixed(1)}h total • {formatTime(metrics.avg_daily_productivity)} daily avg
+            </p>
+          )}
+        </div>
       </div>
 
       <ResponsiveContainer width="100%" height={280}>
