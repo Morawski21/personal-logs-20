@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { HabitGrid } from '@/components/HabitGrid'
 import { Header } from '@/components/Header'
-import { Analytics } from '@/components/Analytics'
 import { Settings } from '@/components/Settings'
 import { LoadingSkeleton } from '@/components/LoadingSkeleton'
 import { ProductivityKPIs } from '@/components/ProductivityKPIs'
@@ -16,7 +15,6 @@ import type { Habit } from '@/types/habit'
 
 export default function Home() {
   const { habits, loading, error, fetchHabits } = useHabitStore()
-  const [showAnalytics, setShowAnalytics] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [debugMode, setDebugMode] = useState(false)
 
@@ -62,22 +60,13 @@ export default function Home() {
       {/* Content */}
       <div className="relative z-10">
         <Header
-          onToggleAnalytics={() => {
-            setShowAnalytics(!showAnalytics)
-            setShowSettings(false)
-          }}
-          onToggleSettings={() => {
-            setShowSettings(!showSettings)
-            setShowAnalytics(false)
-          }}
+          onToggleSettings={() => setShowSettings(!showSettings)}
           onToggleDebug={() => setDebugMode(!debugMode)}
           debugMode={debugMode}
         />
 
         {showSettings ? (
           <Settings />
-        ) : showAnalytics ? (
-          <Analytics />
         ) : (
           <div className="container mx-auto px-4 py-4 space-y-4">
             {/* 30-day Activity Chart */}

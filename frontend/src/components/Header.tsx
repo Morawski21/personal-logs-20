@@ -1,17 +1,16 @@
 'use client'
 
-import { RefreshCw, BarChart3, Settings, Bug } from 'lucide-react'
+import { RefreshCw, Settings, Bug } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useHabitStore } from '@/stores/habitStore'
 
 interface HeaderProps {
-  onToggleAnalytics: () => void
   onToggleSettings: () => void
   onToggleDebug: () => void
   debugMode: boolean
 }
 
-export function Header({ onToggleAnalytics, onToggleSettings, onToggleDebug, debugMode }: HeaderProps) {
+export function Header({ onToggleSettings, onToggleDebug, debugMode }: HeaderProps) {
   const { refreshHabits, loading } = useHabitStore()
   
   const handleRefresh = async () => {
@@ -45,16 +44,6 @@ export function Header({ onToggleAnalytics, onToggleSettings, onToggleDebug, deb
               title="Toggle Debug Mode"
             >
               <Bug className="h-3 w-3" />
-            </motion.button>
-
-            <motion.button
-              onClick={onToggleAnalytics}
-              className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-white/80 hover:text-white transition-all duration-300 rounded-lg bg-slate-800/50 hover:bg-slate-800/70 border border-slate-700/50 hover:border-slate-600/50"
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
-            >
-              <BarChart3 className="h-4 w-4" />
-              Analytics
             </motion.button>
 
             <motion.button

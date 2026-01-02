@@ -123,13 +123,6 @@ export function HabitCard({ habit, className }: HabitCardProps) {
         <Lock className="absolute top-2 right-2 h-4 w-4 text-slate-400 opacity-60 z-10" />
       )}
 
-      {/* Emoji */}
-      <div className="flex-shrink-0">
-        <span className="text-2xl" role="img" aria-label={habit.name}>
-          {habit.emoji}
-        </span>
-      </div>
-
       {/* Name and Progress */}
       <div className="flex-1 min-w-0">
         <h3 className={cn(

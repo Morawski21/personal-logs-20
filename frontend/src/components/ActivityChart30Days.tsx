@@ -1,13 +1,15 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceLine } from 'recharts'
 
 interface ChartDataPoint {
   date: string
   weekday: string
   total: number | null
-  [key: string]: number | string | null
+  displayDate: string
+  isWeekStart: boolean
+  [key: string]: number | string | boolean | null
 }
 
 interface ActivityChartData {
@@ -31,7 +33,24 @@ export function ActivityChart30Days() {
 
       if (response.ok) {
         const chartData = await response.json()
-        setData(chartData)
+
+        const processedChartData = chartData.chart_data.map((point: ChartDataPoint) => {
+          const dateObj = new Date(point.date)
+          const day = dateObj.getDate()
+          const month = dateObj.getMonth() + 1
+          const dayOfWeek = dateObj.getDay()
+
+          return {
+            ...point,
+            displayDate: `${point.weekday} ${day}/${month}`,
+            isWeekStart: dayOfWeek === 1
+          }
+        })
+
+        setData({
+          ...chartData,
+          chart_data: processedChartData
+        })
       } else {
         console.error('Failed to fetch 30-day chart data')
       }
@@ -89,13 +108,16 @@ export function ActivityChart30Days() {
       </div>
 
       <ResponsiveContainer width="100%" height={280}>
-        <BarChart data={data.chart_data} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
+        <BarChart data={data.chart_data} margin={{ top: 10, right: 10, left: 0, bottom: 40 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
           <XAxis
-            dataKey="weekday"
+            dataKey="displayDate"
             stroke="#9ca3af"
-            tick={{ fill: '#9ca3af', fontSize: 12 }}
-            interval={2}
+            tick={{ fill: '#9ca3af', fontSize: 10 }}
+            angle={-45}
+            textAnchor="end"
+            height={80}
+            interval={0}
           />
           <YAxis
             stroke="#9ca3af"
@@ -108,6 +130,17 @@ export function ActivityChart30Days() {
             iconType="rect"
             formatter={(value) => <span style={{ color: '#d1d5db', fontSize: '13px' }}>{value}</span>}
           />
+          {data.chart_data.map((point, index) =>
+            point.isWeekStart && index > 0 ? (
+              <ReferenceLine
+                key={`week-${index}`}
+                x={point.displayDate}
+                stroke="#64748b"
+                strokeWidth={2}
+                strokeDasharray="0"
+              />
+            ) : null
+          )}
           {data.categories.map((category) => (
             <Bar
               key={category}

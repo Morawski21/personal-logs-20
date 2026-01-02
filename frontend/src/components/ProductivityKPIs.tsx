@@ -117,80 +117,48 @@ export function ProductivityKPIs({ debugMode = false }: ProductivityKPIsProps) {
 
       {/* KPIs Section */}
       {loading ? (
-        <div className="text-center text-white/60 py-4 text-sm">Loading productivity insights...</div>
+        <div className="text-center text-white/60 py-2 text-sm">Loading...</div>
       ) : metrics ? (
-        <div className="bg-slate-900/40 border border-slate-700/50 rounded-xl p-5 backdrop-blur-sm">
-          <div className="mb-4">
-            <h3 className="text-base font-semibold text-white/90">
-              7-Day Productivity
-            </h3>
-            <p className="text-white/60 text-xs">Compared to previous period</p>
-          </div>
-
-          <div className="grid grid-cols-3 gap-4">
-            {/* Average Daily KPI */}
-            <div className="bg-slate-800/40 border border-slate-700/40 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-2">
-                <div className="p-2 bg-blue-500/20 rounded-lg">
-                  <Target className="h-4 w-4 text-blue-400" />
-                </div>
-                <div className={`flex items-center gap-1 text-xs ${formatChange(metrics.avg_daily_productivity_change).color}`}>
+        <div className="bg-slate-900/40 border border-slate-700/50 rounded-lg px-4 py-2 backdrop-blur-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-white/60">7-Day Metrics:</span>
+            <div className="flex items-center gap-6">
+              <div className="flex items-center gap-2">
+                <Target className="h-3 w-3 text-blue-400" />
+                <span className="text-sm text-white/90">
+                  Avg: <span className="font-semibold text-blue-400">{formatTime(metrics.avg_daily_productivity)}</span>
+                </span>
+                <div className={`flex items-center gap-0.5 text-xs ${formatChange(metrics.avg_daily_productivity_change).color}`}>
                   {React.createElement(formatChange(metrics.avg_daily_productivity_change).icon, { className: "h-3 w-3" })}
-                  <span className="font-semibold">{formatChange(metrics.avg_daily_productivity_change).value}</span>
+                  <span className="font-medium">{formatChange(metrics.avg_daily_productivity_change).value}</span>
                 </div>
               </div>
-              <div>
-                <h4 className="text-xs text-white/70 mb-1">Daily Average</h4>
-                <p className="text-xl font-bold text-blue-400">
-                  {formatTime(metrics.avg_daily_productivity)}
-                </p>
-              </div>
-            </div>
 
-            {/* Peak Day KPI */}
-            <div className="bg-slate-800/40 border border-slate-700/40 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-2">
-                <div className="p-2 bg-purple-500/20 rounded-lg">
-                  <Zap className="h-4 w-4 text-purple-400" />
-                </div>
-                <div className={`flex items-center gap-1 text-xs ${formatChange(metrics.max_daily_productivity_change).color}`}>
+              <div className="flex items-center gap-2">
+                <Zap className="h-3 w-3 text-purple-400" />
+                <span className="text-sm text-white/90">
+                  Peak: <span className="font-semibold text-purple-400">{formatTime(metrics.max_daily_productivity)}</span>
+                </span>
+                <div className={`flex items-center gap-0.5 text-xs ${formatChange(metrics.max_daily_productivity_change).color}`}>
                   {React.createElement(formatChange(metrics.max_daily_productivity_change).icon, { className: "h-3 w-3" })}
-                  <span className="font-semibold">{formatChange(metrics.max_daily_productivity_change).value}</span>
+                  <span className="font-medium">{formatChange(metrics.max_daily_productivity_change).value}</span>
                 </div>
               </div>
-              <div>
-                <h4 className="text-xs text-white/70 mb-1">Peak Day</h4>
-                <p className="text-xl font-bold text-purple-400">
-                  {formatTime(metrics.max_daily_productivity)}
-                </p>
-              </div>
-            </div>
 
-            {/* Total Hours KPI */}
-            <div className="bg-slate-800/40 border border-slate-700/40 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-2">
-                <div className="p-2 bg-emerald-500/20 rounded-lg">
-                  <Clock className="h-4 w-4 text-emerald-400" />
-                </div>
-                <div className={`flex items-center gap-1 text-xs ${formatChange(metrics.total_productive_hours_change).color}`}>
+              <div className="flex items-center gap-2">
+                <Clock className="h-3 w-3 text-emerald-400" />
+                <span className="text-sm text-white/90">
+                  Total: <span className="font-semibold text-emerald-400">{metrics.total_productive_hours.toFixed(1)}h</span>
+                </span>
+                <div className={`flex items-center gap-0.5 text-xs ${formatChange(metrics.total_productive_hours_change).color}`}>
                   {React.createElement(formatChange(metrics.total_productive_hours_change).icon, { className: "h-3 w-3" })}
-                  <span className="font-semibold">{formatChange(metrics.total_productive_hours_change).value}</span>
+                  <span className="font-medium">{formatChange(metrics.total_productive_hours_change).value}</span>
                 </div>
-              </div>
-              <div>
-                <h4 className="text-xs text-white/70 mb-1">Total Hours</h4>
-                <p className="text-xl font-bold text-emerald-400">
-                  {metrics.total_productive_hours.toFixed(1)}h
-                </p>
               </div>
             </div>
           </div>
         </div>
-      ) : (
-        <div className="text-center text-white/60 py-4 text-sm">
-          No productivity metrics available
-        </div>
-      )}
+      ) : null}
     </div>
   )
 }
