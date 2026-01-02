@@ -1,13 +1,14 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Activity, TrendingUp } from 'lucide-react'
+import { Activity } from 'lucide-react'
 
 interface WorkoutEntry {
   date: string
-  type: string
-  duration: number
-  grade: string
+  activity: string
+  time: number
+  grade: string | null
+  avg_hr: number | null
 }
 
 export function ExerciseActivity() {
@@ -43,77 +44,93 @@ export function ExerciseActivity() {
   }
 
   const getGradeColor = (grade: string) => {
-    if (grade.startsWith('A')) return '#10b981'
-    if (grade.startsWith('B')) return '#3b82f6'
-    if (grade.startsWith('C')) return '#f59e0b'
-    if (grade.startsWith('D')) return '#ff4d6b'
-    return '#6b7280'
+    const g = grade.toUpperCase()
+    if (g.startsWith('A')) return { bg: 'rgba(52, 211, 153, 0.15)', text: '#34d399', border: '#34d399' }
+    if (g.startsWith('B')) return { bg: 'rgba(96, 165, 250, 0.15)', text: '#60a5fa', border: '#60a5fa' }
+    if (g.startsWith('C')) return { bg: 'rgba(251, 191, 36, 0.15)', text: '#fbbf24', border: '#fbbf24' }
+    if (g.startsWith('D')) return { bg: 'rgba(248, 113, 113, 0.15)', text: '#f87171', border: '#f87171' }
+    return { bg: 'rgba(107, 114, 128, 0.15)', text: '#6b7280', border: '#6b7280' }
   }
 
   if (loading) {
     return (
-      <div className="rounded-xl p-5 backdrop-blur-sm animate-pulse" style={{ backgroundColor: '#1a1f2e', borderColor: '#2a3441', borderWidth: '1px' }}>
-        <div className="h-6 w-32 rounded" style={{ backgroundColor: '#2a3441' }}></div>
-        <div className="h-4 w-48 rounded mt-2" style={{ backgroundColor: '#2a3441' }}></div>
+      <div className="rounded-xl p-5 backdrop-blur-sm animate-pulse" style={{ backgroundColor: '#2d1b0e', borderColor: '#5c3d2e', borderWidth: '1px' }}>
+        <div className="h-6 w-32 rounded" style={{ backgroundColor: '#5c3d2e' }}></div>
       </div>
     )
   }
 
-  const thisWeekWorkouts = workouts.slice(0, 3)
-  const totalMinutes = thisWeekWorkouts.reduce((sum, w) => sum + w.duration, 0)
-
   return (
-    <div className="rounded-xl p-5 backdrop-blur-sm" style={{ backgroundColor: '#1a1f2e', borderColor: '#2a3441', borderWidth: '1px' }}>
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <h3 className="text-base font-semibold flex items-center gap-2" style={{ color: '#f9fafb' }}>
-            <Activity className="h-4 w-4" style={{ color: '#10b981' }} />
-            Recent Training
-          </h3>
-          <p className="text-xs mt-1" style={{ color: '#9ca3af' }}>
-            This week: {thisWeekWorkouts.length}/3 sessions • {totalMinutes}min total
-          </p>
-        </div>
+    <div className="rounded-xl p-5 backdrop-blur-sm" style={{ backgroundColor: '#2d1b0e', borderColor: '#5c3d2e', borderWidth: '1px' }}>
+      <div className="mb-4 flex items-center gap-2">
+        <Activity className="h-5 w-5" style={{ color: '#f59e0b' }} />
+        <h3 className="text-base font-semibold" style={{ color: '#fef3c7' }}>
+          Training Log
+        </h3>
       </div>
 
       {workouts.length > 0 ? (
-        <div className="space-y-2">
-          {workouts.slice(0, 5).map((workout, index) => (
-            <div
-              key={index}
-              className="flex items-center justify-between py-2 px-3 rounded-lg"
-              style={{ backgroundColor: 'rgba(42, 52, 65, 0.4)' }}
-            >
-              <div className="flex items-center gap-3">
-                <span className="text-sm font-medium" style={{ color: '#9ca3af' }}>
-                  {formatDate(workout.date)}
-                </span>
-                <span className="text-sm" style={{ color: '#f9fafb' }}>
-                  {workout.type}
-                </span>
-                {workout.duration > 0 && (
-                  <span className="text-xs" style={{ color: '#9ca3af' }}>
-                    {workout.duration}min
-                  </span>
-                )}
-              </div>
-              {workout.grade && workout.grade !== 'NA' && (
-                <span
-                  className="text-sm font-bold px-2 py-1 rounded"
-                  style={{
-                    color: getGradeColor(workout.grade),
-                    backgroundColor: `${getGradeColor(workout.grade)}15`
-                  }}
-                >
-                  Grade: {workout.grade}
-                </span>
-              )}
-            </div>
-          ))}
+        <div className="overflow-y-auto" style={{ maxHeight: '300px' }}>
+          <table className="w-full text-sm">
+            <thead className="sticky top-0" style={{ backgroundColor: '#2d1b0e' }}>
+              <tr style={{ borderBottom: '1px solid #5c3d2e' }}>
+                <th className="text-left py-2 px-3 font-semibold" style={{ color: '#d4a574' }}>Date</th>
+                <th className="text-left py-2 px-3 font-semibold" style={{ color: '#d4a574' }}>Activity</th>
+                <th className="text-center py-2 px-3 font-semibold" style={{ color: '#d4a574' }}>Time</th>
+                <th className="text-center py-2 px-3 font-semibold" style={{ color: '#d4a574' }}>Grade</th>
+                <th className="text-center py-2 px-3 font-semibold" style={{ color: '#d4a574' }}>Avg HR</th>
+              </tr>
+            </thead>
+            <tbody>
+              {workouts.map((workout, index) => {
+                const gradeColors = workout.grade ? getGradeColor(workout.grade) : null
+
+                return (
+                  <tr
+                    key={index}
+                    className="hover:bg-opacity-50 transition-colors"
+                    style={{
+                      borderBottom: index < workouts.length - 1 ? '1px solid rgba(92, 61, 46, 0.3)' : 'none',
+                      backgroundColor: index % 2 === 0 ? 'rgba(92, 61, 46, 0.15)' : 'transparent'
+                    }}
+                  >
+                    <td className="py-2 px-3" style={{ color: '#d4a574' }}>
+                      {formatDate(workout.date)}
+                    </td>
+                    <td className="py-2 px-3" style={{ color: '#fef3c7' }}>
+                      {workout.activity}
+                    </td>
+                    <td className="py-2 px-3 text-center" style={{ color: '#d4a574' }}>
+                      {workout.time > 0 ? `${workout.time}m` : '-'}
+                    </td>
+                    <td className="py-2 px-3 text-center">
+                      {workout.grade && gradeColors ? (
+                        <span
+                          className="inline-block px-2 py-1 rounded font-bold text-sm"
+                          style={{
+                            backgroundColor: gradeColors.bg,
+                            color: gradeColors.text,
+                            border: `1px solid ${gradeColors.border}`
+                          }}
+                        >
+                          {workout.grade}
+                        </span>
+                      ) : (
+                        <span style={{ color: '#a0826a' }}>-</span>
+                      )}
+                    </td>
+                    <td className="py-2 px-3 text-center" style={{ color: '#d4a574' }}>
+                      {workout.avg_hr || '-'}
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
         </div>
       ) : (
-        <div className="text-center py-4" style={{ color: '#6b7280' }}>
-          <p className="text-sm">No recent workouts</p>
+        <div className="text-center py-8" style={{ color: '#d4a574' }}>
+          <p className="text-sm">No workouts logged</p>
         </div>
       )}
     </div>

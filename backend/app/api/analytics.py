@@ -472,61 +472,179 @@ def debug_data() -> Dict[str, Any]:
 
 @router.get("/recent-workouts")
 def get_recent_workouts() -> Dict[str, Any]:
-    """Get recent workout data with grades"""
+    """Get recent workout data from workouts sheet"""
     try:
+        import pandas as pd
+
         excel_files = excel_service.find_excel_files()
         if not excel_files:
             return {"workouts": []}
 
         file_path = excel_files[0]
-        data = excel_service.parse_excel_file(file_path)
 
-        # Find workout grade habit (looking for A-F grading pattern)
-        workout_habits = [h for h in data['habits'] if 'workout' in h.name.lower() or 'grade' in h.name.lower()]
-
-        if not workout_habits:
+        # Try to read workouts sheet
+        try:
+            workouts_df = pd.read_excel(file_path, sheet_name='Workouts')
+        except:
             return {"workouts": []}
 
-        workout_habit_ids = [h.id for h in workout_habits]
+        # Parse columns: Date, Activity, Time, Grade, Avg_HR
+        workouts = []
 
-        # Get entries for workout habits
-        workout_entries = [e for e in data['entries'] if e.habit_id in workout_habit_ids]
+        for _, row in workouts_df.iterrows():
+            try:
+                # Parse date
+                date_val = row.get('Date') or row.get('date') or row.get('DATA')
+                if pd.isna(date_val):
+                    continue
+
+                if isinstance(date_val, str):
+                    date_obj = pd.to_datetime(date_val, dayfirst=True).date()
+                else:
+                    date_obj = pd.to_datetime(date_val).date()
+
+                # Parse activity
+                activity = row.get('Activity') or row.get('activity') or row.get('ACTIVITY') or 'Unknown'
+                if pd.isna(activity):
+                    activity = 'Unknown'
+
+                # Parse time (minutes)
+                time_val = row.get('Time') or row.get('time') or row.get('TIME') or 0
+                try:
+                    time_minutes = int(float(time_val)) if not pd.isna(time_val) else 0
+                except:
+                    time_minutes = 0
+
+                # Parse grade
+                grade = row.get('Grade') or row.get('grade') or row.get('GRADE') or None
+                if pd.isna(grade):
+                    grade = None
+                else:
+                    grade = str(grade).strip()
+
+                # Parse avg_hr
+                avg_hr = row.get('Avg_HR') or row.get('avg_hr') or row.get('AVG_HR') or None
+                try:
+                    avg_hr = int(float(avg_hr)) if not pd.isna(avg_hr) else None
+                except:
+                    avg_hr = None
+
+                workouts.append({
+                    "date": date_obj.strftime("%Y-%m-%d"),
+                    "activity": str(activity),
+                    "time": time_minutes,
+                    "grade": grade,
+                    "avg_hr": avg_hr
+                })
+            except Exception as e:
+                print(f"Error parsing workout row: {e}")
+                continue
 
         # Sort by date descending
-        workout_entries.sort(key=lambda e: e.date.date() if hasattr(e.date, 'date') else e.date, reverse=True)
+        workouts.sort(key=lambda w: w["date"], reverse=True)
 
-        # Build workout list
-        workouts = []
-        for entry in workout_entries[:7]:  # Last 7 days
-            date_obj = entry.date.date() if hasattr(entry.date, 'date') else entry.date
-
-            workout = {
-                "date": date_obj.strftime("%Y-%m-%d"),
-                "type": "Cardio Training",  # Default type
-                "duration": 0,
-                "grade": entry.value if entry.value and entry.value not in ['NA', 'nan', None, ''] else None
-            }
-
-            # Try to get duration from time-based habits on same day
-            day_entries = [e for e in data['entries']
-                          if (e.date.date() if hasattr(e.date, 'date') else e.date) == date_obj]
-
-            for day_entry in day_entries:
-                habit = next((h for h in data['habits'] if h.id == day_entry.habit_id), None)
-                if habit and habit.habit_type == 'time':
-                    try:
-                        duration = float(day_entry.value) if day_entry.value not in ['NA', 'nan', None, ''] else 0
-                        if duration > 0:
-                            workout["duration"] += duration
-                    except (ValueError, TypeError):
-                        pass
-
-            workouts.append(workout)
-
-        return {"workouts": workouts}
+        # Return last 20 workouts
+        return {"workouts": workouts[:20]}
 
     except Exception as e:
+        print(f"Error loading workout data: {e}")
         raise HTTPException(status_code=500, detail=f"Error loading workout data: {str(e)}")
+
+@router.get("/selfcare-summary")
+def get_selfcare_summary() -> Dict[str, Any]:
+    """Get summary of selfcare/grooming activities"""
+    try:
+        excel_files = excel_service.find_excel_files()
+        if not excel_files:
+            return {"activities": []}
+
+        file_path = excel_files[0]
+        data = excel_service.parse_excel_file(file_path)
+
+        # Define selfcare habit names to track
+        selfcare_names = ['haircare', 'dermapen', 'sauna', 'yoga', 'vegetable']
+
+        activities = []
+
+        for name in selfcare_names:
+            # Find matching habit
+            habit = next((h for h in data['habits'] if name.lower() in h.name.lower()), None)
+
+            if not habit:
+                continue
+
+            # Get entries for this habit
+            habit_entries = [e for e in data['entries'] if e.habit_id == habit.id]
+
+            if not habit_entries:
+                continue
+
+            # Sort by date
+            habit_entries.sort(key=lambda e: e.date.date() if hasattr(e.date, 'date') else e.date, reverse=True)
+
+            # Check if daily or occasional
+            is_daily = name.lower() in ['haircare', 'vegetable']
+
+            if is_daily:
+                # Calculate current streak and check if completed today
+                completed_entries = [e for e in habit_entries if e.completed]
+                completed_entries.sort(key=lambda e: e.date.date() if hasattr(e.date, 'date') else e.date, reverse=True)
+
+                current_streak = 0
+                if completed_entries:
+                    # Calculate streak from most recent completed
+                    for i, entry in enumerate(completed_entries):
+                        entry_date = entry.date.date() if hasattr(entry.date, 'date') else entry.date
+                        if i == 0:
+                            current_streak = 1
+                        else:
+                            prev_date = completed_entries[i-1].date.date() if hasattr(completed_entries[i-1].date, 'date') else completed_entries[i-1].date
+                            if (prev_date - entry_date).days == 1:
+                                current_streak += 1
+                            else:
+                                break
+
+                    # Check if completed today
+                    from datetime import datetime
+                    today = datetime.now().date()
+                    most_recent_date = completed_entries[0].date.date() if hasattr(completed_entries[0].date, 'date') else completed_entries[0].date
+                    completed_today = most_recent_date == today
+                else:
+                    completed_today = False
+
+                activities.append({
+                    "name": habit.name,
+                    "type": "daily",
+                    "current_streak": current_streak,
+                    "completed_today": completed_today
+                })
+            else:
+                # Occasional activity - show days since last
+                completed_entries = [e for e in habit_entries if e.completed]
+
+                if completed_entries:
+                    from datetime import datetime
+                    today = datetime.now().date()
+                    last_date = completed_entries[0].date.date() if hasattr(completed_entries[0].date, 'date') else completed_entries[0].date
+                    days_since = (today - last_date).days
+
+                    activities.append({
+                        "name": habit.name,
+                        "type": "occasional",
+                        "days_since_last": days_since
+                    })
+                else:
+                    activities.append({
+                        "name": habit.name,
+                        "type": "occasional",
+                        "days_since_last": None
+                    })
+
+        return {"activities": activities}
+
+    except Exception as e:
+        print(f"Error loading selfcare data: {e}")
+        raise HTTPException(status_code=500, detail=f"Error loading selfcare data: {str(e)}")
 
 @router.get("/calendar")
 def get_calendar_data(days: int = 14) -> List[Dict[str, Any]]:

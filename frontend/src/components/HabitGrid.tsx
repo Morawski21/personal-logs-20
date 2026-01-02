@@ -27,7 +27,7 @@ interface HabitGridProps {
 }
 
 // Core habits that should always be prioritized
-const CORE_HABIT_NAMES = ['ynab', 'Anki']
+const CORE_HABIT_NAMES = ['ynab', 'no_porn', 'gaming', 'youtube', 'czytanie', 'gitara']
 
 export function HabitGrid({ habits }: HabitGridProps) {
   // State for drag & drop
@@ -97,11 +97,11 @@ export function HabitGrid({ habits }: HabitGridProps) {
         items={localHabits.map(h => h.id)}
         strategy={verticalListSortingStrategy}
       >
-        <div className="rounded-xl p-5 backdrop-blur-sm" style={{ backgroundColor: '#1a1f2e', borderColor: '#2a3441', borderWidth: '1px' }}>
+        <div className="rounded-xl p-5 backdrop-blur-sm" style={{ backgroundColor: '#2d1b0e', borderColor: '#5c3d2e', borderWidth: '1px' }}>
           <div className="mb-4 flex items-center justify-between">
             <div>
-              <h3 className="text-base font-semibold" style={{ color: '#f9fafb' }}>Habits</h3>
-              <p className="text-xs" style={{ color: '#9ca3af' }}>
+              <h3 className="text-base font-semibold" style={{ color: '#fef3c7' }}>Habits</h3>
+              <p className="text-xs" style={{ color: '#d4a574' }}>
                 {mainHabitsCompleted} of {mainHabits.length} completed today • {coreHabits.length + activeHabits.length} active
               </p>
             </div>
@@ -165,9 +165,9 @@ export function HabitGrid({ habits }: HabitGridProps) {
               )}
             </div>
           ) : (
-            <div className="text-center py-8" style={{ color: '#9ca3af' }}>
+            <div className="text-center py-8" style={{ color: '#d4a574' }}>
               <p className="text-sm">No habits found</p>
-              <p className="text-xs mt-2" style={{ color: '#6b7280' }}>Add Excel files to the data directory</p>
+              <p className="text-xs mt-2" style={{ color: '#a0826a' }}>Add Excel files to the data directory</p>
             </div>
           )}
         </div>

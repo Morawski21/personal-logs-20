@@ -11,6 +11,7 @@ import { DailyInsights } from '@/components/DailyInsights'
 import { StreakNotifications } from '@/components/StreakNotifications'
 import { ActivityChart30Days } from '@/components/ActivityChart30Days'
 import { ExerciseActivity } from '@/components/ExerciseActivity'
+import { SelfcareBox } from '@/components/SelfcareBox'
 import { useHabitStore } from '@/stores/habitStore'
 import type { Habit } from '@/types/habit'
 
@@ -25,9 +26,9 @@ export default function Home() {
 
   if (loading) {
     return (
-      <div className="min-h-screen relative overflow-hidden" style={{ backgroundColor: '#0f1419' }}>
-        <div className="absolute inset-0 bg-gradient-to-br from-[#0f1419] via-[#1a1f2e] to-[#0f1419]">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_40%,rgba(59,130,246,0.05),transparent_70%)]" />
+      <div className="min-h-screen relative overflow-hidden" style={{ backgroundColor: '#1a0f0a' }}>
+        <div className="absolute inset-0 bg-gradient-to-br from-[#1a0f0a] via-[#2d1b0e] to-[#1a0f0a]">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_40%,rgba(245,158,11,0.06),transparent_70%)]" />
         </div>
         <div className="relative z-10">
           <Header
@@ -36,10 +37,10 @@ export default function Home() {
             debugMode={debugMode}
           />
           <div className="container mx-auto px-4 py-4">
-            <div className="rounded-xl p-6 backdrop-blur-sm animate-pulse" style={{ backgroundColor: '#1a1f2e', borderColor: '#2a3441', borderWidth: '1px' }}>
-              <div className="h-8 w-48 rounded" style={{ backgroundColor: '#2a3441' }}></div>
-              <div className="h-4 w-64 rounded mt-2" style={{ backgroundColor: '#2a3441' }}></div>
-              <div className="h-64 rounded mt-4" style={{ backgroundColor: '#2a3441' }}></div>
+            <div className="rounded-xl p-6 backdrop-blur-sm animate-pulse" style={{ backgroundColor: '#2d1b0e', borderColor: '#5c3d2e', borderWidth: '1px' }}>
+              <div className="h-8 w-48 rounded" style={{ backgroundColor: '#5c3d2e' }}></div>
+              <div className="h-4 w-64 rounded mt-2" style={{ backgroundColor: '#5c3d2e' }}></div>
+              <div className="h-64 rounded mt-4" style={{ backgroundColor: '#5c3d2e' }}></div>
             </div>
           </div>
         </div>
@@ -71,10 +72,10 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden" style={{ backgroundColor: '#0f1419' }}>
-      {/* Simplified background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#0f1419] via-[#1a1f2e] to-[#0f1419]">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_40%,rgba(59,130,246,0.05),transparent_70%)]" />
+    <div className="min-h-screen relative overflow-hidden" style={{ backgroundColor: '#1a0f0a' }}>
+      {/* Warm brown background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[#1a0f0a] via-[#2d1b0e] to-[#1a0f0a]">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_40%,rgba(245,158,11,0.06),transparent_70%)]" />
       </div>
 
       {/* Content */}
@@ -92,8 +93,18 @@ export default function Home() {
             {/* 30-day Activity Chart with metrics */}
             <ActivityChart30Days />
 
-            {/* Exercise Activity Panel */}
-            <ExerciseActivity />
+            {/* Training & Selfcare Row */}
+            <div className="grid grid-cols-3 gap-4">
+              {/* Selfcare Box - 1/3 width */}
+              <div className="col-span-1">
+                <SelfcareBox />
+              </div>
+
+              {/* Exercise Activity Table - 2/3 width */}
+              <div className="col-span-2">
+                <ExerciseActivity />
+              </div>
+            </div>
 
             {/* Habit Cards Grid */}
             <HabitGrid habits={habits} />

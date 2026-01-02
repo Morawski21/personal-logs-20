@@ -144,34 +144,19 @@ export function HabitCard({ habit, className }: HabitCardProps) {
       </div>
 
       {/* Streaks */}
-      <div className="flex items-center gap-3 flex-shrink-0">
+      <div className="flex items-center gap-4 flex-shrink-0">
         <div className="text-center">
-          <p className="text-xs" style={{ color: '#9ca3af' }}>Current</p>
+          <p className="text-xs" style={{ color: '#d4a574' }}>Current</p>
           <p className="text-lg font-bold" style={{ color: cardStyles.streakColor }}>
             {habit.current_streak}
           </p>
         </div>
 
         <div className="text-center">
-          <p className="text-xs" style={{ color: '#9ca3af' }}>Best</p>
-          <p className="text-lg font-bold" style={{ color: '#9ca3af' }}>
+          <p className="text-xs" style={{ color: '#d4a574' }}>Best</p>
+          <p className="text-lg font-bold" style={{ color: '#d4a574' }}>
             {habit.best_streak}
           </p>
-        </div>
-
-        {/* Today Status */}
-        <div
-          className="w-10 h-10 rounded-lg flex items-center justify-center border transition-all duration-300"
-          style={{
-            backgroundColor: habit.completed_today ? 'rgba(16, 185, 129, 0.2)' : 'rgba(107, 114, 128, 0.1)',
-            borderColor: habit.completed_today ? 'rgba(16, 185, 129, 0.5)' : '#2a3441'
-          }}
-        >
-          {habit.completed_today ? (
-            <span className="text-lg font-bold" style={{ color: '#10b981' }}>✓</span>
-          ) : (
-            <span className="text-lg" style={{ color: '#6b7280' }}>◯</span>
-          )}
         </div>
       </div>
     </motion.div>
