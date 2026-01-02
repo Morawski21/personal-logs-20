@@ -54,17 +54,17 @@ export function ExerciseActivity() {
 
   if (loading) {
     return (
-      <div className="rounded-xl p-5 backdrop-blur-sm animate-pulse" style={{ backgroundColor: '#2d1b0e', borderColor: '#5c3d2e', borderWidth: '1px' }}>
-        <div className="h-6 w-32 rounded" style={{ backgroundColor: '#5c3d2e' }}></div>
+      <div className="rounded-xl p-5 backdrop-blur-sm animate-pulse" style={{ backgroundColor: '#1a1f2e', borderColor: '#2a3441', borderWidth: '1px' }}>
+        <div className="h-6 w-32 rounded" style={{ backgroundColor: '#2a3441' }}></div>
       </div>
     )
   }
 
   return (
-    <div className="rounded-xl p-5 backdrop-blur-sm" style={{ backgroundColor: '#2d1b0e', borderColor: '#5c3d2e', borderWidth: '1px' }}>
+    <div className="rounded-xl p-5 backdrop-blur-sm" style={{ backgroundColor: '#1a1f2e', borderColor: '#2a3441', borderWidth: '1px' }}>
       <div className="mb-4 flex items-center gap-2">
-        <Activity className="h-5 w-5" style={{ color: '#f59e0b' }} />
-        <h3 className="text-base font-semibold" style={{ color: '#fef3c7' }}>
+        <Activity className="h-5 w-5" style={{ color: '#06b6d4' }} />
+        <h3 className="text-base font-semibold" style={{ color: '#f9fafb' }}>
           Training Log
         </h3>
       </div>
@@ -72,13 +72,13 @@ export function ExerciseActivity() {
       {workouts.length > 0 ? (
         <div className="overflow-y-auto" style={{ maxHeight: '300px' }}>
           <table className="w-full text-sm">
-            <thead className="sticky top-0" style={{ backgroundColor: '#2d1b0e' }}>
-              <tr style={{ borderBottom: '1px solid #5c3d2e' }}>
-                <th className="text-left py-2 px-3 font-semibold" style={{ color: '#d4a574' }}>Date</th>
-                <th className="text-left py-2 px-3 font-semibold" style={{ color: '#d4a574' }}>Activity</th>
-                <th className="text-center py-2 px-3 font-semibold" style={{ color: '#d4a574' }}>Time</th>
-                <th className="text-center py-2 px-3 font-semibold" style={{ color: '#d4a574' }}>Grade</th>
-                <th className="text-center py-2 px-3 font-semibold" style={{ color: '#d4a574' }}>Avg HR</th>
+            <thead className="sticky top-0" style={{ backgroundColor: '#1a1f2e' }}>
+              <tr style={{ borderBottom: '1px solid #2a3441' }}>
+                <th className="text-left py-2 px-3 font-semibold" style={{ color: '#9ca3af' }}>Date</th>
+                <th className="text-left py-2 px-3 font-semibold" style={{ color: '#9ca3af' }}>Activity</th>
+                <th className="text-center py-2 px-3 font-semibold" style={{ color: '#9ca3af' }}>Time</th>
+                <th className="text-center py-2 px-3 font-semibold" style={{ color: '#9ca3af' }}>Grade</th>
+                <th className="text-center py-2 px-3 font-semibold" style={{ color: '#9ca3af' }}>Avg HR</th>
               </tr>
             </thead>
             <tbody>
@@ -90,17 +90,17 @@ export function ExerciseActivity() {
                     key={index}
                     className="hover:bg-opacity-50 transition-colors"
                     style={{
-                      borderBottom: index < workouts.length - 1 ? '1px solid rgba(92, 61, 46, 0.3)' : 'none',
-                      backgroundColor: index % 2 === 0 ? 'rgba(92, 61, 46, 0.15)' : 'transparent'
+                      borderBottom: index < workouts.length - 1 ? '1px solid rgba(42, 52, 65, 0.5)' : 'none',
+                      backgroundColor: index % 2 === 0 ? 'rgba(42, 52, 65, 0.3)' : 'transparent'
                     }}
                   >
-                    <td className="py-2 px-3" style={{ color: '#d4a574' }}>
+                    <td className="py-2 px-3" style={{ color: '#9ca3af' }}>
                       {formatDate(workout.date)}
                     </td>
-                    <td className="py-2 px-3" style={{ color: '#fef3c7' }}>
+                    <td className="py-2 px-3" style={{ color: '#f9fafb' }}>
                       {workout.activity}
                     </td>
-                    <td className="py-2 px-3 text-center" style={{ color: '#d4a574' }}>
+                    <td className="py-2 px-3 text-center" style={{ color: '#9ca3af' }}>
                       {workout.time > 0 ? `${workout.time}m` : '-'}
                     </td>
                     <td className="py-2 px-3 text-center">
@@ -116,10 +116,10 @@ export function ExerciseActivity() {
                           {workout.grade}
                         </span>
                       ) : (
-                        <span style={{ color: '#a0826a' }}>-</span>
+                        <span style={{ color: '#6b7280' }}>-</span>
                       )}
                     </td>
-                    <td className="py-2 px-3 text-center" style={{ color: '#d4a574' }}>
+                    <td className="py-2 px-3 text-center" style={{ color: '#9ca3af' }}>
                       {workout.avg_hr || '-'}
                     </td>
                   </tr>
@@ -129,7 +129,7 @@ export function ExerciseActivity() {
           </table>
         </div>
       ) : (
-        <div className="text-center py-8" style={{ color: '#d4a574' }}>
+        <div className="text-center py-8" style={{ color: '#9ca3af' }}>
           <p className="text-sm">No workouts logged</p>
         </div>
       )}

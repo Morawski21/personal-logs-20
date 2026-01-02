@@ -18,14 +18,14 @@ export function Header({ onToggleSettings, onToggleDebug, debugMode }: HeaderPro
   }
 
   return (
-    <header className="border-b backdrop-blur-xl relative z-20" style={{ borderColor: '#5c3d2e', backgroundColor: 'rgba(45, 27, 14, 0.9)' }}>
+    <header className="border-b backdrop-blur-xl relative z-20" style={{ borderColor: '#2a3441', backgroundColor: 'rgba(26, 31, 46, 0.9)' }}>
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <div className="space-y-0.5">
-            <h1 className="text-2xl font-bold" style={{ color: '#fef3c7' }}>
+            <h1 className="text-2xl font-bold" style={{ color: '#f9fafb' }}>
               Personal Logs
             </h1>
-            <p className="text-xs" style={{ color: '#d4a574' }}>
+            <p className="text-xs" style={{ color: '#9ca3af' }}>
               Track your habits with Excel integration
             </p>
           </div>

@@ -478,14 +478,26 @@ def get_recent_workouts() -> Dict[str, Any]:
 
         excel_files = excel_service.find_excel_files()
         if not excel_files:
+            print("No Excel files found for workouts")
             return {"workouts": []}
 
         file_path = excel_files[0]
+        print(f"Reading workouts from: {file_path}")
 
-        # Try to read workouts sheet
-        try:
-            workouts_df = pd.read_excel(file_path, sheet_name='Workouts')
-        except:
+        # Try to read workouts sheet with different case variations
+        workouts_df = None
+        for sheet_name in ['Workouts', 'workouts', 'WORKOUTS']:
+            try:
+                workouts_df = pd.read_excel(file_path, sheet_name=sheet_name)
+                print(f"Successfully read sheet '{sheet_name}' with shape {workouts_df.shape}")
+                print(f"Columns: {list(workouts_df.columns)}")
+                break
+            except Exception as e:
+                print(f"Failed to read sheet '{sheet_name}': {e}")
+                continue
+
+        if workouts_df is None:
+            print("Could not find workouts sheet in any case variation")
             return {"workouts": []}
 
         # Parse columns: Date, Activity, Time, Grade, Avg_HR
@@ -543,11 +555,14 @@ def get_recent_workouts() -> Dict[str, Any]:
         # Sort by date descending
         workouts.sort(key=lambda w: w["date"], reverse=True)
 
+        print(f"Returning {len(workouts)} workouts")
         # Return last 20 workouts
         return {"workouts": workouts[:20]}
 
     except Exception as e:
         print(f"Error loading workout data: {e}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Error loading workout data: {str(e)}")
 
 @router.get("/selfcare-summary")
@@ -561,14 +576,26 @@ def get_selfcare_summary() -> Dict[str, Any]:
         file_path = excel_files[0]
         data = excel_service.parse_excel_file(file_path)
 
-        # Define selfcare habit names to track
-        selfcare_names = ['haircare', 'dermapen', 'sauna', 'yoga', 'vegetable']
+        # Define selfcare activities
+        # Daily: haircare, vegetables
+        # Occasional: dermapen, sauna_session, yoga_session
+        selfcare_config = [
+            {"search": "haircare", "display": "Haircare", "daily": True},
+            {"search": "vegetable", "display": "Vegetables", "daily": True},
+            {"search": "dermapen", "display": "Dermapen", "daily": False},
+            {"search": "sauna", "display": "Sauna", "daily": False},
+            {"search": "yoga", "display": "Yoga", "daily": False},
+        ]
 
         activities = []
 
-        for name in selfcare_names:
-            # Find matching habit
-            habit = next((h for h in data['habits'] if name.lower() in h.name.lower()), None)
+        for config in selfcare_config:
+            search_term = config["search"]
+            display_name = config["display"]
+            is_daily = config["daily"]
+
+            # Find matching habit - match by name or ID
+            habit = next((h for h in data['habits'] if search_term.lower() in h.name.lower() or search_term.lower() in h.id.lower()), None)
 
             if not habit:
                 continue
@@ -577,13 +604,24 @@ def get_selfcare_summary() -> Dict[str, Any]:
             habit_entries = [e for e in data['entries'] if e.habit_id == habit.id]
 
             if not habit_entries:
+                # If no entries, still show the activity
+                if is_daily:
+                    activities.append({
+                        "name": display_name,
+                        "type": "daily",
+                        "current_streak": 0,
+                        "completed_today": False
+                    })
+                else:
+                    activities.append({
+                        "name": display_name,
+                        "type": "occasional",
+                        "days_since_last": None
+                    })
                 continue
 
             # Sort by date
             habit_entries.sort(key=lambda e: e.date.date() if hasattr(e.date, 'date') else e.date, reverse=True)
-
-            # Check if daily or occasional
-            is_daily = name.lower() in ['haircare', 'vegetable']
 
             if is_daily:
                 # Calculate current streak and check if completed today
@@ -613,7 +651,7 @@ def get_selfcare_summary() -> Dict[str, Any]:
                     completed_today = False
 
                 activities.append({
-                    "name": habit.name,
+                    "name": display_name,
                     "type": "daily",
                     "current_streak": current_streak,
                     "completed_today": completed_today
@@ -629,13 +667,13 @@ def get_selfcare_summary() -> Dict[str, Any]:
                     days_since = (today - last_date).days
 
                     activities.append({
-                        "name": habit.name,
+                        "name": display_name,
                         "type": "occasional",
                         "days_since_last": days_since
                     })
                 else:
                     activities.append({
-                        "name": habit.name,
+                        "name": display_name,
                         "type": "occasional",
                         "days_since_last": None
                     })
@@ -644,6 +682,8 @@ def get_selfcare_summary() -> Dict[str, Any]:
 
     except Exception as e:
         print(f"Error loading selfcare data: {e}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Error loading selfcare data: {str(e)}")
 
 @router.get("/calendar")

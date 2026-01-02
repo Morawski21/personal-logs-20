@@ -106,16 +106,16 @@ export function ActivityChart30Days() {
 
   if (loading) {
     return (
-      <div className="rounded-xl p-6 backdrop-blur-sm" style={{ backgroundColor: '#2d1b0e', borderColor: '#5c3d2e', borderWidth: '1px' }}>
-        <div className="text-center" style={{ color: '#d4a574' }}>Loading activity data...</div>
+      <div className="rounded-xl p-6 backdrop-blur-sm" style={{ backgroundColor: '#1a1f2e', borderColor: '#2a3441', borderWidth: '1px' }}>
+        <div className="text-center" style={{ color: '#9ca3af' }}>Loading activity data...</div>
       </div>
     )
   }
 
   if (!data || !data.chart_data || data.chart_data.length === 0) {
     return (
-      <div className="rounded-xl p-6 backdrop-blur-sm" style={{ backgroundColor: '#2d1b0e', borderColor: '#5c3d2e', borderWidth: '1px' }}>
-        <div className="text-center" style={{ color: '#d4a574' }}>No activity data available</div>
+      <div className="rounded-xl p-6 backdrop-blur-sm" style={{ backgroundColor: '#1a1f2e', borderColor: '#2a3441', borderWidth: '1px' }}>
+        <div className="text-center" style={{ color: '#9ca3af' }}>No activity data available</div>
       </div>
     )
   }
@@ -125,14 +125,14 @@ export function ActivityChart30Days() {
       const total = payload.reduce((sum: number, entry: any) => sum + (entry.value || 0), 0)
 
       return (
-        <div className="rounded-lg p-3 backdrop-blur-sm" style={{ backgroundColor: 'rgba(45, 27, 14, 0.95)', borderColor: '#5c3d2e', borderWidth: '1px' }}>
-          <p className="font-semibold mb-2" style={{ color: '#fef3c7' }}>{label}</p>
+        <div className="bg-slate-900/95 border border-slate-700/80 rounded-lg p-3 backdrop-blur-sm">
+          <p className="text-white font-semibold mb-2">{label}</p>
           {payload.map((entry: any, index: number) => (
             <p key={index} className="text-sm" style={{ color: entry.color }}>
               {entry.name}: {Math.round(entry.value)}m
             </p>
           ))}
-          <p className="text-sm font-semibold mt-2 pt-2" style={{ color: '#fef3c7', borderTop: '1px solid #5c3d2e' }}>
+          <p className="text-white/80 text-sm font-semibold mt-2 pt-2 border-t border-slate-700">
             Total: {Math.round(total)}m ({(total / 60).toFixed(1)}h)
           </p>
         </div>
@@ -142,14 +142,14 @@ export function ActivityChart30Days() {
   }
 
   return (
-    <div className="rounded-xl p-6 backdrop-blur-sm" style={{ backgroundColor: '#2d1b0e', borderColor: '#5c3d2e', borderWidth: '1px' }}>
+    <div className="rounded-xl p-6 backdrop-blur-sm" style={{ backgroundColor: '#1a1f2e', borderColor: '#2a3441', borderWidth: '1px' }}>
       <div className="mb-4 flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold" style={{ color: '#fef3c7' }}>
+          <h3 className="text-lg font-semibold" style={{ color: '#f9fafb' }}>
             Last 30 Days Activity
           </h3>
           {metrics && (
-            <p className="text-sm mt-1" style={{ color: '#d4a574' }}>
+            <p className="text-sm mt-1" style={{ color: '#9ca3af' }}>
               {metrics.total_productive_hours.toFixed(1)}h total • {formatTime(metrics.avg_daily_productivity)} daily avg
             </p>
           )}
@@ -158,33 +158,33 @@ export function ActivityChart30Days() {
 
       <ResponsiveContainer width="100%" height={280}>
         <BarChart data={data.chart_data} margin={{ top: 10, right: 10, left: 0, bottom: 40 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#5c3d2e" opacity={0.3} />
+          <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
           <XAxis
             dataKey="displayDate"
-            stroke="#d4a574"
-            tick={{ fill: '#d4a574', fontSize: 10 }}
+            stroke="#9ca3af"
+            tick={{ fill: '#9ca3af', fontSize: 10 }}
             angle={-45}
             textAnchor="end"
             height={80}
             interval={0}
           />
           <YAxis
-            stroke="#d4a574"
-            tick={{ fill: '#d4a574', fontSize: 12 }}
-            label={{ value: 'Minutes', angle: -90, position: 'insideLeft', fill: '#d4a574', fontSize: 12 }}
+            stroke="#9ca3af"
+            tick={{ fill: '#9ca3af', fontSize: 12 }}
+            label={{ value: 'Minutes', angle: -90, position: 'insideLeft', fill: '#9ca3af', fontSize: 12 }}
           />
           <Tooltip content={<CustomTooltip />} />
           <Legend
             wrapperStyle={{ paddingTop: '10px' }}
             iconType="rect"
-            formatter={(value) => <span style={{ color: '#fef3c7', fontSize: '13px' }}>{value}</span>}
+            formatter={(value) => <span style={{ color: '#d1d5db', fontSize: '13px' }}>{value}</span>}
           />
           {data.chart_data.map((point, index) =>
             point.isWeekStart && index > 0 ? (
               <ReferenceLine
                 key={`week-${index}`}
                 x={point.displayDate}
-                stroke="#5c3d2e"
+                stroke="#64748b"
                 strokeWidth={2}
                 strokeDasharray="0"
               />
