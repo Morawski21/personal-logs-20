@@ -582,10 +582,7 @@ def get_selfcare_summary() -> Dict[str, Any]:
 
         # Define activities to track with their search terms and lucide icon names
         selfcare_config = [
-            {"search": "vegetable", "display": "Vegetables", "icon": "Leaf"},
-            {"search": "haircare", "display": "Haircare", "icon": "Scissors"},
             {"search": "dermapen", "display": "Dermapen", "icon": "Droplet"},
-            {"search": "cronometer", "display": "Cronometer", "icon": "Clock"},
         ]
 
         # Get activities from habits
@@ -640,7 +637,7 @@ def get_selfcare_summary() -> Dict[str, Any]:
             if accessories_col:
                 accessories_activities = [
                     {"keyword": "sauna", "display": "Sauna", "icon": "Flame"},
-                    {"keyword": "yoga", "display": "Yoga", "icon": "Stretch"}
+                    {"keyword": "joga", "display": "Yoga", "icon": "Stretch"}
                 ]
 
                 for activity_config in accessories_activities:
