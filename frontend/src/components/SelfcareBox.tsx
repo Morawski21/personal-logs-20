@@ -1,24 +1,27 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Scissors, Droplet, Leaf, Flame, User } from 'lucide-react'
+import { Droplet, Flame, User } from 'lucide-react'
 
 interface SelfcareActivity {
   name: string
-  type: 'daily' | 'occasional'
-  current_streak?: number
-  completed_today?: boolean
-  days_since_last?: number | null
+  type: 'occasional'
+  days_since_last: number | null
+  icon?: string
 }
 
-const getActivityIcon = (name: string) => {
+const getActivityIcon = (name: string, iconFromApi?: string) => {
+  // Use icon from API if available
+  if (iconFromApi) {
+    return iconFromApi
+  }
+
+  // Fallback to lucide-react icons
   const nameLower = name.toLowerCase()
-  if (nameLower.includes('hair')) return Scissors
   if (nameLower.includes('derma')) return Droplet
-  if (nameLower.includes('veg')) return Leaf
   if (nameLower.includes('sauna')) return Flame
   if (nameLower.includes('yoga')) return User
-  return Leaf
+  return Droplet
 }
 
 export function SelfcareBox() {
@@ -65,33 +68,48 @@ export function SelfcareBox() {
       </h3>
 
       {activities.length > 0 ? (
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-3 gap-3">
           {activities.map((activity, index) => {
-            const Icon = getActivityIcon(activity.name)
-            const isCompleted = activity.type === 'daily' && activity.completed_today
+            const iconElement = getActivityIcon(activity.name, activity.icon)
+            const isEmoji = typeof iconElement === 'string'
+
+            // Determine color based on days since last
+            const getDaysColor = (days: number | null) => {
+              if (days === null) return '#6b7280' // Gray for never
+              if (days === 0) return '#10b981' // Green for today
+              if (days <= 3) return '#3b82f6' // Blue for recent
+              if (days <= 7) return '#eab308' // Yellow for warning
+              return '#ef4444' // Red for too long
+            }
+
+            const daysColor = getDaysColor(activity.days_since_last)
 
             return (
               <div
                 key={index}
                 className="relative rounded-lg p-3 flex flex-col items-center justify-center text-center transition-all duration-200 hover:scale-105"
                 style={{
-                  backgroundColor: isCompleted ? 'rgba(16, 185, 129, 0.15)' : 'rgba(42, 52, 65, 0.5)',
-                  border: isCompleted ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(42, 52, 65, 0.7)',
-                  minHeight: '85px'
+                  backgroundColor: 'rgba(42, 52, 65, 0.5)',
+                  border: `1px solid ${daysColor}40`,
+                  minHeight: '90px'
                 }}
               >
                 {/* Icon */}
                 <div
                   className="rounded-lg p-2 mb-2"
                   style={{
-                    backgroundColor: isCompleted ? 'rgba(16, 185, 129, 0.2)' : 'rgba(148, 163, 184, 0.15)',
-                    border: `1px solid ${isCompleted ? '#10b981' : '#475569'}`
+                    backgroundColor: `${daysColor}20`,
+                    border: `1px solid ${daysColor}60`
                   }}
                 >
-                  <Icon
-                    className="h-5 w-5"
-                    style={{ color: isCompleted ? '#10b981' : '#94a3b8' }}
-                  />
+                  {isEmoji ? (
+                    <span className="text-2xl">{iconElement}</span>
+                  ) : (
+                    (() => {
+                      const IconComponent = iconElement as React.ComponentType<{ className: string; style: { color: string } }>
+                      return <IconComponent className="h-5 w-5" style={{ color: daysColor }} />
+                    })()
+                  )}
                 </div>
 
                 {/* Name */}
@@ -99,23 +117,14 @@ export function SelfcareBox() {
                   {activity.name}
                 </div>
 
-                {/* Status */}
-                {activity.type === 'daily' ? (
-                  <div className="flex items-center gap-1">
-                    <span className="text-sm font-bold" style={{ color: isCompleted ? '#10b981' : '#9ca3af' }}>
-                      {activity.current_streak || 0}
-                    </span>
-                    {isCompleted && (
-                      <span className="text-xs font-bold" style={{ color: '#10b981' }}>✓</span>
-                    )}
-                  </div>
-                ) : (
-                  <div className="text-xs" style={{ color: '#9ca3af' }}>
-                    {activity.days_since_last !== null && activity.days_since_last !== undefined
-                      ? `${activity.days_since_last}d ago`
-                      : 'Never'}
-                  </div>
-                )}
+                {/* Days since last */}
+                <div className="text-xs font-semibold" style={{ color: daysColor }}>
+                  {activity.days_since_last !== null && activity.days_since_last !== undefined
+                    ? activity.days_since_last === 0
+                      ? 'Today'
+                      : `${activity.days_since_last}d ago`
+                    : 'Never'}
+                </div>
               </div>
             )
           })}
