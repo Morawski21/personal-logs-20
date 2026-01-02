@@ -1,8 +1,11 @@
+export type HabitType = 'time' | 'binary' | 'description' | 'grade'
+
 export interface Habit {
   id: string
   name: string
   emoji: string
-  habit_type: 'time' | 'binary' | 'description'
+  habit_type: HabitType
+  category?: string
   color?: string
   active: boolean
   order: number
@@ -26,4 +29,19 @@ export interface Analytics {
   longest_streak: number
   completed_today: number
   completion_rate: number
+}
+
+export interface CalendarDay {
+  date: string
+  completed_habits: number
+  total_habits: number
+  productivity_minutes: number
+  perfect_day: boolean
+  workout_grade?: string
+}
+
+export interface ExternalLink {
+  name: string
+  url: string
+  icon: string
 }

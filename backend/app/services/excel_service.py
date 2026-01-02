@@ -8,6 +8,16 @@ from datetime import datetime, date
 import re
 
 class ExcelService:
+    # Category mapping for 2026 resolutions
+    CATEGORY_MAP = {
+        'digital_wellbeing': ['digital_blockers', 'no_porn', 'limited_gaming'],
+        'health_grooming': ['haircare', 'dermapen', 'laser_session', 'sauna_session', 'suplementy'],
+        'physical_training': ['workout_grade', 'yoga_session', 'cronometer', 'vegetables', 'sport', 'accessories'],
+        'professional_work': ['Tech + Praca', 'Tech+Praca', 'Tech', 'Praca', 'Inne', 'Other'],
+        'skills_learning': ['anki', 'nepali', 'Gitara', 'Czytanie'],
+        'youtube_content': ['YouTube']
+    }
+
     def __init__(self, data_path: str):
         self.data_path = Path(data_path)
         self.data_path.mkdir(exist_ok=True)
@@ -24,8 +34,47 @@ class ExcelService:
         print(f"Found Excel files: {[str(f) for f in excel_files]}")  # Debug
         return excel_files
     
+    def _get_habit_category(self, habit_name: str) -> str:
+        """Assign category based on habit name"""
+        for category, habit_list in self.CATEGORY_MAP.items():
+            if habit_name in habit_list:
+                return category
+        return 'other'
+
+    def _detect_excel_format(self, file_path: Path) -> str:
+        """Detect if Excel is multi-sheet (2026 format) or single-sheet (2025 format)"""
+        try:
+            xl_file = pd.ExcelFile(file_path)
+            sheet_names = set(xl_file.sheet_names)
+
+            # Check for 2026 multi-sheet format
+            if {'core', 'habits', 'workouts'}.issubset(sheet_names):
+                print(f"Detected multi-sheet format (2026)")
+                return 'multi_sheet'
+            else:
+                print(f"Detected single-sheet format (2025)")
+                return 'single_sheet'
+        except Exception as e:
+            print(f"Error detecting format: {e}")
+            return 'single_sheet'
+
     def parse_excel_file(self, file_path: Path) -> Dict[str, Any]:
         """Parse Excel file and extract habits and entries"""
+        try:
+            # Detect format and route to appropriate parser
+            format_type = self._detect_excel_format(file_path)
+
+            if format_type == 'multi_sheet':
+                return self._parse_multi_sheet_excel(file_path)
+            else:
+                return self._parse_single_sheet_excel(file_path)
+
+        except Exception as e:
+            print(f"Error parsing Excel file {file_path}: {e}")
+            return {'habits': [], 'entries': [], 'file_path': str(file_path), 'last_modified': 0}
+
+    def _parse_single_sheet_excel(self, file_path: Path) -> Dict[str, Any]:
+        """Parse single-sheet Excel file (2025 format)"""
         try:
             df = pd.read_excel(file_path)
             
@@ -136,18 +185,22 @@ class ExcelService:
                         print(f"    FORCING type to 'time' for productivity column")  # Debug
                         habit_type = 'time'
                 
+                # Assign category
+                category = self._get_habit_category(col)
+
                 # Use saved config or create default
                 if habit_id in saved_config:
                     config = saved_config[habit_id]
                     # Skip if marked as inactive
                     if not config.active:
                         continue
-                    
+
                     habit = Habit(
                         id=habit_id,
                         name=config.name,
                         emoji=config.emoji,
                         habit_type=habit_type,
+                        category=category,
                         order=config.order,
                         current_streak=0,
                         best_streak=0,
@@ -161,12 +214,13 @@ class ExcelService:
                     )
                     saved_config[habit_id] = default_config
                     self.config_service.save_config(saved_config)
-                    
+
                     habit = Habit(
                         id=habit_id,
                         name=default_name,
                         emoji=default_emoji,
                         habit_type=habit_type,
+                        category=category,
                         order=i,
                         current_streak=0,
                         best_streak=0,
@@ -207,9 +261,10 @@ class ExcelService:
                         continue
                     
                     print(f"FORCE-ADDING missing productivity column: {essential_col}")  # Debug
-                    
+
                     default_emoji = self._get_smart_emoji(essential_col)
-                    
+                    category = self._get_habit_category(essential_col)
+
                     # Use saved config if available, otherwise create default
                     if habit_id in saved_config:
                         config = saved_config[habit_id]
@@ -218,6 +273,7 @@ class ExcelService:
                             name=config.name,
                             emoji=config.emoji,
                             habit_type='time',  # Force time type for analytics
+                            category=category,
                             order=config.order,
                             current_streak=0,
                             best_streak=0,
@@ -231,12 +287,13 @@ class ExcelService:
                         )
                         saved_config[habit_id] = default_config
                         self.config_service.save_config(saved_config)
-                        
+
                         habit = Habit(
                             id=habit_id,
                             name=essential_col,
                             emoji=default_emoji,
                             habit_type='time',  # Force time type
+                            category=category,
                             order=len(habits),
                             current_streak=0,
                             best_streak=0,
@@ -365,25 +422,264 @@ class ExcelService:
             
         return 'binary'  # Default fallback
     
+    def _parse_multi_sheet_excel(self, file_path: Path) -> Dict[str, Any]:
+        """Parse multi-sheet Excel file (2026 format)"""
+        try:
+            xl_file = pd.ExcelFile(file_path)
+
+            # Parse all sheets
+            df_core = pd.read_excel(xl_file, sheet_name='core')
+            df_habits = pd.read_excel(xl_file, sheet_name='habits')
+            df_workouts = pd.read_excel(xl_file, sheet_name='workouts')
+
+            print(f"Parsed multi-sheet Excel: core={df_core.shape}, habits={df_habits.shape}, workouts={df_workouts.shape}")
+
+            # System columns to exclude
+            SYSTEM_COLUMNS = {'Data', 'WEEKDAY', 'Razem', 'Unnamed: 8', 'Unnamed: 18'}
+
+            habits = []
+            entries = []
+            saved_config = self.config_service.load_config()
+
+            # Parse date column from core sheet
+            date_col = df_core.columns[0]
+            try:
+                df_core[date_col] = pd.to_datetime(df_core[date_col], dayfirst=True).dt.date
+            except:
+                try:
+                    df_core[date_col] = pd.to_datetime(df_core[date_col], format='%d.%m.%Y').dt.date
+                except:
+                    df_core[date_col] = pd.to_datetime(df_core[date_col]).dt.date
+
+            # Align dates in other sheets
+            df_habits[df_habits.columns[0]] = df_core[date_col]
+            df_workouts[df_workouts.columns[0]] = df_core[date_col]
+
+            habit_order = 0
+
+            # Helper function to create habit
+            def create_habit(col_name, habit_type, df, sheet_name):
+                nonlocal habit_order
+                habit_id = f"habit_{col_name}"
+                is_personal = col_name.startswith('🔒') or 'personal' in col_name.lower()
+                default_emoji = self._get_smart_emoji(col_name)
+                default_name = col_name.replace('🔒 ', '').strip()
+                category = self._get_habit_category(col_name)
+
+                # Use saved config or create default
+                if habit_id in saved_config:
+                    config = saved_config[habit_id]
+                    if not config.active:
+                        return None, []
+
+                    habit = Habit(
+                        id=habit_id,
+                        name=config.name,
+                        emoji=config.emoji,
+                        habit_type=habit_type,
+                        category=category,
+                        order=config.order,
+                        current_streak=0,
+                        best_streak=0,
+                        completed_today=False,
+                        is_personal=config.is_personal
+                    )
+                else:
+                    default_config = self.config_service.create_default_config(
+                        habit_id, default_name, default_emoji, habit_order, is_personal
+                    )
+                    saved_config[habit_id] = default_config
+                    self.config_service.save_config(saved_config)
+
+                    habit = Habit(
+                        id=habit_id,
+                        name=default_name,
+                        emoji=default_emoji,
+                        habit_type=habit_type,
+                        category=category,
+                        order=habit_order,
+                        current_streak=0,
+                        best_streak=0,
+                        completed_today=False,
+                        is_personal=is_personal
+                    )
+
+                habit_order += 1
+
+                # Create entries
+                habit_entries = []
+                for _, row in df.iterrows():
+                    if pd.notna(row[col_name]) and pd.notna(row[date_col]):
+                        entry = HabitEntry(
+                            habit_id=habit_id,
+                            date=row[date_col],
+                            value=str(row[col_name]),
+                            completed=self._is_completed(row[col_name], habit_type)
+                        )
+                        habit_entries.append(entry)
+
+                print(f"Created habit '{col_name}' ({sheet_name} sheet, {habit_type}) with {len(habit_entries)} entries")
+                return habit, habit_entries
+
+            # Process core sheet (time-based habits)
+            for col in df_core.columns:
+                if col in SYSTEM_COLUMNS or str(col).startswith('Unnamed') or col == date_col:
+                    continue
+
+                # Determine type
+                sample_values = df_core[col].dropna().head(10)
+                if len(sample_values) == 0:
+                    continue
+
+                habit_type = self._determine_habit_type(sample_values)
+
+                # Force time type for productivity columns
+                if "tech" in col.lower() or "praca" in col.lower() or col.lower() in ['inne', 'other']:
+                    habit_type = 'time'
+
+                habit, habit_entries = create_habit(col, habit_type, df_core, 'core')
+                if habit:
+                    habits.append(habit)
+                    entries.extend(habit_entries)
+
+            # Process habits sheet (binary habits)
+            for col in df_habits.columns:
+                if col in SYSTEM_COLUMNS or str(col).startswith('Unnamed') or col == df_habits.columns[0]:
+                    continue
+
+                sample_values = df_habits[col].dropna().head(10)
+                if len(sample_values) == 0:
+                    continue
+
+                habit_type = self._determine_habit_type(sample_values)
+
+                habit, habit_entries = create_habit(col, habit_type, df_habits, 'habits')
+                if habit:
+                    habits.append(habit)
+                    entries.extend(habit_entries)
+
+            # Process workouts sheet
+            # 1. Handle workout_grade column if it exists
+            if 'workout_grade' in df_workouts.columns:
+                habit, habit_entries = create_habit('workout_grade', 'grade', df_workouts, 'workouts')
+                if habit:
+                    habits.append(habit)
+                    entries.extend(habit_entries)
+
+            # 2. Extract derived metrics from accessories column
+            if 'accessories' in df_workouts.columns:
+                # Create virtual habits for sauna and yoga
+                for activity in ['sauna', 'yoga']:
+                    habit_id = f"habit_{activity}_session"
+                    category = self._get_habit_category(f"{activity}_session")
+                    default_emoji = '🧖' if activity == 'sauna' else '🧘'
+
+                    # Create habit
+                    if habit_id in saved_config:
+                        config = saved_config[habit_id]
+                        if not config.active:
+                            continue
+
+                        habit = Habit(
+                            id=habit_id,
+                            name=config.name,
+                            emoji=config.emoji,
+                            habit_type='binary',
+                            category=category,
+                            order=config.order,
+                            current_streak=0,
+                            best_streak=0,
+                            completed_today=False,
+                            is_personal=config.is_personal
+                        )
+                    else:
+                        display_name = f"{activity.capitalize()} Session"
+                        default_config = self.config_service.create_default_config(
+                            habit_id, display_name, default_emoji, habit_order, False
+                        )
+                        saved_config[habit_id] = default_config
+                        self.config_service.save_config(saved_config)
+
+                        habit = Habit(
+                            id=habit_id,
+                            name=display_name,
+                            emoji=default_emoji,
+                            habit_type='binary',
+                            category=category,
+                            order=habit_order,
+                            current_streak=0,
+                            best_streak=0,
+                            completed_today=False,
+                            is_personal=False
+                        )
+
+                    habit_order += 1
+                    habits.append(habit)
+
+                    # Create entries based on accessories column text
+                    for _, row in df_workouts.iterrows():
+                        if pd.notna(row['accessories']) and pd.notna(row[date_col]):
+                            accessories_text = str(row['accessories']).lower()
+                            has_activity = activity in accessories_text
+
+                            entry = HabitEntry(
+                                habit_id=habit_id,
+                                date=row[date_col],
+                                value='1' if has_activity else '0',
+                                completed=has_activity
+                            )
+                            entries.append(entry)
+
+                    print(f"Created virtual habit '{activity}_session' from accessories column")
+
+            # 3. Handle sport and accessories columns as description habits
+            for col in ['sport', 'accessories']:
+                if col in df_workouts.columns:
+                    habit, habit_entries = create_habit(col, 'description', df_workouts, 'workouts')
+                    if habit:
+                        habits.append(habit)
+                        entries.extend(habit_entries)
+
+            return {
+                'habits': habits,
+                'entries': entries,
+                'file_path': str(file_path),
+                'last_modified': file_path.stat().st_mtime
+            }
+
+        except Exception as e:
+            print(f"Error parsing multi-sheet Excel: {e}")
+            import traceback
+            traceback.print_exc()
+            return {'habits': [], 'entries': [], 'file_path': str(file_path), 'last_modified': 0}
+
     def _is_completed(self, value: Any, habit_type: str) -> bool:
         """Determine if a habit entry represents completion (from original app logic)"""
         if pd.isna(value):
             return False
-            
+
         if habit_type == 'binary':
             # Binary habits: only completed if value is exactly 1.0
             try:
                 return float(value) == 1.0
             except (ValueError, TypeError):
                 return False
-                
+
         elif habit_type == 'time':
             # Time habits: completed if >= 20 minutes
             try:
                 return float(value) >= 20.0
             except (ValueError, TypeError):
                 return False
-                
+
+        elif habit_type == 'grade':
+            # Grade habits: completed if grade is A, B, or C
+            try:
+                grade = str(value).strip().upper()
+                return grade in ['A', 'B', 'C']
+            except (ValueError, TypeError):
+                return False
+
         else:  # description
             # Description habits don't have streaks in the original app
             return False

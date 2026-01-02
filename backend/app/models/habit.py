@@ -5,7 +5,8 @@ from datetime import date
 class HabitBase(BaseModel):
     name: str
     emoji: str
-    habit_type: str  # 'time', 'binary', 'description'
+    habit_type: str  # 'time', 'binary', 'description', 'grade'
+    category: Optional[str] = 'other'
     color: Optional[str] = None
     active: bool = True
     order: int = 0

@@ -469,3 +469,86 @@ def debug_data() -> Dict[str, Any]:
         
     except Exception as e:
         return {"error": str(e), "traceback": str(e.__traceback__)}
+
+@router.get("/calendar")
+def get_calendar_data(days: int = 14) -> List[Dict[str, Any]]:
+    """Get calendar view data for last N days (default 14)"""
+    try:
+        excel_files = excel_service.find_excel_files()
+        if not excel_files:
+            return []
+
+        file_path = excel_files[0]
+        data = excel_service.parse_excel_file(file_path)
+
+        habits = data['habits']
+        entries = data['entries']
+
+        # Get trackable habits (non-description types)
+        trackable_habits = [h for h in habits if h.habit_type in ['binary', 'time', 'grade']]
+        total_trackable = len(trackable_habits)
+
+        # Get productivity time habits
+        time_habit_ids = [h.id for h in habits if h.habit_type == 'time']
+
+        # Group entries by date
+        entries_by_date = {}
+        for entry in entries:
+            date_key = entry.date.date() if hasattr(entry.date, 'date') else entry.date
+            if date_key not in entries_by_date:
+                entries_by_date[date_key] = []
+            entries_by_date[date_key].append(entry)
+
+        # Get most recent date and calculate range
+        if not entries_by_date:
+            return []
+
+        most_recent_date = max(entries_by_date.keys())
+        start_date = most_recent_date - timedelta(days=days-1)
+
+        # Build calendar data
+        calendar_data = []
+        for i in range(days):
+            current_date = start_date + timedelta(days=i)
+            day_entries = entries_by_date.get(current_date, [])
+
+            # Count completed trackable habits
+            completed_count = 0
+            productivity_minutes = 0
+            workout_grade = None
+
+            for entry in day_entries:
+                if entry.completed:
+                    # Check if this is a trackable habit
+                    habit = next((h for h in trackable_habits if h.id == entry.habit_id), None)
+                    if habit:
+                        completed_count += 1
+
+                # Sum productivity minutes
+                if entry.habit_id in time_habit_ids:
+                    try:
+                        value = float(entry.value) if entry.value not in ['NA', 'nan', None, ''] else 0
+                        productivity_minutes += value
+                    except (ValueError, TypeError):
+                        pass
+
+                # Get workout grade
+                if 'workout_grade' in entry.habit_id:
+                    workout_grade = entry.value
+
+            # Check if it's a perfect day
+            perfect_day = completed_count == total_trackable and total_trackable > 0
+
+            calendar_data.append({
+                "date": current_date.strftime("%Y-%m-%d"),
+                "completed_habits": completed_count,
+                "total_habits": total_trackable,
+                "productivity_minutes": productivity_minutes,
+                "perfect_day": perfect_day,
+                "workout_grade": workout_grade
+            })
+
+        return calendar_data
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error loading calendar data: {str(e)}")

@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api import habits, analytics
+from app.api import habits, analytics, config
 from app.core.config import settings
 
 app = FastAPI(
@@ -19,6 +19,7 @@ app.add_middleware(
 
 app.include_router(habits.router, prefix="/api/habits", tags=["habits"])
 app.include_router(analytics.router, prefix="/api/analytics", tags=["analytics"])
+app.include_router(config.router, prefix="/api/config", tags=["config"])
 
 @app.get("/")
 def read_root():

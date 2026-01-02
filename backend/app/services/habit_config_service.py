@@ -9,6 +9,7 @@ class HabitConfig(BaseModel):
     name: str
     emoji: str
     active: bool = True
+    category: Optional[str] = 'other'
     color: Optional[str] = None
     order: int = 0
     is_personal: bool = False
@@ -66,13 +67,19 @@ class HabitConfigService:
             return self.save_config(config)
         return False
     
-    def create_default_config(self, habit_id: str, original_name: str, emoji: str, 
+    def create_default_config(self, habit_id: str, original_name: str, emoji: str,
                             order: int, is_personal: bool = False) -> HabitConfig:
         """Create default configuration for a new habit"""
+        # Habits that should be hidden by default
+        DEFAULT_HIDDEN_HABITS = ['no_twitter', 'no_junk_food']
+
+        # Check if this habit should be hidden by default
+        is_active = original_name.lower() not in DEFAULT_HIDDEN_HABITS
+
         return HabitConfig(
             name=original_name,
             emoji=emoji,
-            active=True,
+            active=is_active,
             order=order,
             is_personal=is_personal
         )

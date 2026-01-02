@@ -110,3 +110,5 @@ backend/data/*.xls
 frontend/out/
 frontend/.next/
 backend/__pycache__/
+
+*.xlsx

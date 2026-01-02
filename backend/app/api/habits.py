@@ -17,21 +17,21 @@ router = APIRouter()
 excel_service = ExcelService(settings.EXCEL_DATA_PATH)
 config_service = HabitConfigService()
 
-@router.get("/", response_model=List[Habit])
-def get_habits():
-    """Get all habits from Excel files"""
+@router.get("/")
+def get_habits(grouped: bool = False):
+    """Get all habits from Excel files. Use ?grouped=true to get habits organized by category"""
     try:
         all_habits = []
         excel_files = excel_service.find_excel_files()
-        
+
         for file_path in excel_files:
             data = excel_service.parse_excel_file(file_path)
             habits = data['habits']
             entries = data['entries']
-            
+
             # Calculate streaks
             streaks = excel_service.calculate_streaks(entries)
-            
+
             # Update habits with streak data
             for habit in habits:
                 if habit.id in streaks:
@@ -42,6 +42,7 @@ def get_habits():
                         name=habit.name,
                         emoji=habit.emoji,
                         habit_type=habit.habit_type,
+                        category=habit.category,
                         color=habit.color,
                         active=habit.active,
                         order=habit.order,
@@ -53,8 +54,23 @@ def get_habits():
                     all_habits.append(updated_habit)
                 else:
                     all_habits.append(habit)
-        
-        return all_habits
+
+        if grouped:
+            # Group habits by category
+            by_category = {}
+            for habit in all_habits:
+                category = habit.category or 'other'
+                if category not in by_category:
+                    by_category[category] = []
+                by_category[category].append(habit)
+
+            return {
+                "habits": all_habits,
+                "by_category": by_category
+            }
+        else:
+            return all_habits
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error loading habits: {str(e)}")
 
