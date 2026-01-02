@@ -175,9 +175,10 @@ export function ActivityChart30Days() {
           />
           <Tooltip content={<CustomTooltip />} />
           <Legend
-            wrapperStyle={{ paddingTop: '10px' }}
+            wrapperStyle={{ paddingTop: '4px', fontSize: '11px' }}
             iconType="rect"
-            formatter={(value) => <span style={{ color: '#d1d5db', fontSize: '13px' }}>{value}</span>}
+            iconSize={8}
+            formatter={(value) => <span style={{ color: '#d1d5db', fontSize: '10px' }}>{value}</span>}
           />
           {data.chart_data.map((point, index) =>
             point.isWeekStart && index > 0 ? (

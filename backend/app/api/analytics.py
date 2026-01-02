@@ -567,29 +567,59 @@ def get_recent_workouts() -> Dict[str, Any]:
 
 @router.get("/selfcare-summary")
 def get_selfcare_summary() -> Dict[str, Any]:
-    """Get summary of selfcare/grooming activities - days since last for sauna, yoga, dermapen"""
+    """Get summary of selfcare/grooming activities - days since last"""
     try:
         excel_files = excel_service.find_excel_files()
         if not excel_files:
             return {"activities": []}
 
         file_path = excel_files[0]
-
         activities = []
         today = datetime.now().date()
 
-        # Read the Excel file directly to access sheets
+        # Get parsed data from excel service
+        data = excel_service.parse_excel_file(file_path)
+
+        # Define activities to track with their search terms and lucide icon names
+        selfcare_config = [
+            {"search": "vegetable", "display": "Vegetables", "icon": "Leaf"},
+            {"search": "haircare", "display": "Haircare", "icon": "Scissors"},
+            {"search": "dermapen", "display": "Dermapen", "icon": "Droplet"},
+            {"search": "cronometer", "display": "Cronometer", "icon": "Clock"},
+        ]
+
+        # Get activities from habits
+        for config in selfcare_config:
+            search_term = config["search"]
+            display_name = config["display"]
+            icon_name = config["icon"]
+
+            # Find matching habit
+            habit = next((h for h in data['habits']
+                         if search_term.lower() in h.name.lower() or search_term.lower() in h.id.lower()), None)
+
+            if habit:
+                # Get completed entries
+                habit_entries = [e for e in data['entries'] if e.habit_id == habit.id and e.completed]
+                habit_entries.sort(key=lambda e: e.date.date() if hasattr(e.date, 'date') else e.date, reverse=True)
+
+                days_since = None
+                if habit_entries:
+                    last_date = habit_entries[0].date.date() if hasattr(habit_entries[0].date, 'date') else habit_entries[0].date
+                    days_since = (today - last_date).days
+
+                activities.append({
+                    "name": display_name,
+                    "days_since_last": days_since,
+                    "icon": icon_name
+                })
+
+        # Handle sauna and yoga from accessories column (if multi-sheet format)
         xl_file = pd.ExcelFile(file_path)
-
-        # Check if multi-sheet format (has 'core' and 'habits' sheets)
-        has_core_sheet = 'core' in xl_file.sheet_names
-        has_habits_sheet = 'habits' in xl_file.sheet_names
-
-        if has_core_sheet:
-            # Multi-sheet format: read core sheet for accessories column (sauna, yoga)
+        if 'core' in xl_file.sheet_names:
             df_core = pd.read_excel(file_path, sheet_name='core')
 
-            # Parse dates in core sheet
+            # Parse dates
             date_col = df_core.columns[0]
             try:
                 df_core[date_col] = pd.to_datetime(df_core[date_col], dayfirst=True).dt.date
@@ -599,20 +629,24 @@ def get_selfcare_summary() -> Dict[str, Any]:
                 except:
                     df_core[date_col] = pd.to_datetime(df_core[date_col]).dt.date
 
-            # Look for accessories column (case insensitive)
+            # Find accessories column
             accessories_col = None
             for col in df_core.columns:
                 if 'accessories' in str(col).lower():
                     accessories_col = col
                     break
 
-            # Parse sauna and yoga from accessories column
+            # Parse sauna and yoga
             if accessories_col:
-                for activity_name in ['Sauna', 'Yoga']:
-                    keyword = activity_name.lower()
+                accessories_activities = [
+                    {"keyword": "sauna", "display": "Sauna", "icon": "Flame"},
+                    {"keyword": "yoga", "display": "Yoga", "icon": "Stretch"}
+                ]
+
+                for activity_config in accessories_activities:
+                    keyword = activity_config["keyword"]
                     last_date = None
 
-                    # Find most recent mention in accessories
                     for _, row in df_core.iterrows():
                         if pd.notna(row[accessories_col]) and pd.notna(row[date_col]):
                             accessories_text = str(row[accessories_col]).lower()
@@ -621,49 +655,15 @@ def get_selfcare_summary() -> Dict[str, Any]:
                                 if last_date is None or entry_date > last_date:
                                     last_date = entry_date
 
-                    # Calculate days since last
                     days_since = None
                     if last_date:
                         days_since = (today - last_date).days
 
-                    # Select appropriate icon
-                    icon = '🧖' if activity_name == 'Sauna' else '🧘'
-
                     activities.append({
-                        "name": activity_name,
-                        "type": "occasional",
+                        "name": activity_config["display"],
                         "days_since_last": days_since,
-                        "icon": icon
+                        "icon": activity_config["icon"]
                     })
-
-        # Get dermapen from habits (either in habits sheet or main sheet)
-        data = excel_service.parse_excel_file(file_path)
-
-        # Find dermapen habit
-        dermapen_habit = None
-        for h in data['habits']:
-            if 'dermapen' in h.name.lower() or 'dermapen' in h.id.lower():
-                dermapen_habit = h
-                break
-
-        if dermapen_habit:
-            # Get entries for dermapen
-            dermapen_entries = [e for e in data['entries'] if e.habit_id == dermapen_habit.id and e.completed]
-
-            # Sort by date descending
-            dermapen_entries.sort(key=lambda e: e.date.date() if hasattr(e.date, 'date') else e.date, reverse=True)
-
-            days_since = None
-            if dermapen_entries:
-                last_date = dermapen_entries[0].date.date() if hasattr(dermapen_entries[0].date, 'date') else dermapen_entries[0].date
-                days_since = (today - last_date).days
-
-            activities.append({
-                "name": "Dermapen",
-                "type": "occasional",
-                "days_since_last": days_since,
-                "icon": "💧"
-            })
 
         return {"activities": activities}
 
