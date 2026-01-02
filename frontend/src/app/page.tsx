@@ -93,17 +93,13 @@ export default function Home() {
             {/* 30-day Activity Chart with metrics */}
             <ActivityChart30Days />
 
-            {/* Training & Selfcare Row */}
-            <div className="grid grid-cols-3 gap-4">
-              {/* Selfcare Box - 1/3 width */}
-              <div className="col-span-1">
-                <SelfcareBox />
-              </div>
+            {/* Self-care & Training Row */}
+            <div className="grid grid-cols-2 gap-4">
+              {/* Selfcare Box - 1/2 width */}
+              <SelfcareBox />
 
-              {/* Exercise Activity Table - 2/3 width */}
-              <div className="col-span-2">
-                <ExerciseActivity />
-              </div>
+              {/* Exercise Activity Table - 1/2 width */}
+              <ExerciseActivity />
             </div>
 
             {/* Habit Cards Grid */}

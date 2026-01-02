@@ -486,7 +486,7 @@ def get_recent_workouts() -> Dict[str, Any]:
 
         # Try to read workouts sheet with different case variations
         workouts_df = None
-        for sheet_name in ['Workouts', 'workouts', 'WORKOUTS']:
+        for sheet_name in ['workouts', 'Workouts', 'WORKOUTS']:
             try:
                 workouts_df = pd.read_excel(file_path, sheet_name=sheet_name)
                 print(f"Successfully read sheet '{sheet_name}' with shape {workouts_df.shape}")
@@ -505,8 +505,8 @@ def get_recent_workouts() -> Dict[str, Any]:
 
         for _, row in workouts_df.iterrows():
             try:
-                # Parse date
-                date_val = row.get('Date') or row.get('date') or row.get('DATA')
+                # Parse date - try different column name variations
+                date_val = row.get('Data') or row.get('Date') or row.get('date') or row.get('DATA')
                 if pd.isna(date_val):
                     continue
 
@@ -516,26 +516,26 @@ def get_recent_workouts() -> Dict[str, Any]:
                     date_obj = pd.to_datetime(date_val).date()
 
                 # Parse activity
-                activity = row.get('Activity') or row.get('activity') or row.get('ACTIVITY') or 'Unknown'
+                activity = row.get('activity') or row.get('Activity') or row.get('ACTIVITY') or 'Unknown'
                 if pd.isna(activity):
                     activity = 'Unknown'
 
                 # Parse time (minutes)
-                time_val = row.get('Time') or row.get('time') or row.get('TIME') or 0
+                time_val = row.get('time') or row.get('Time') or row.get('TIME') or 0
                 try:
                     time_minutes = int(float(time_val)) if not pd.isna(time_val) else 0
                 except:
                     time_minutes = 0
 
                 # Parse grade
-                grade = row.get('Grade') or row.get('grade') or row.get('GRADE') or None
+                grade = row.get('grade') or row.get('Grade') or row.get('GRADE') or None
                 if pd.isna(grade):
                     grade = None
                 else:
                     grade = str(grade).strip()
 
                 # Parse avg_hr
-                avg_hr = row.get('Avg_HR') or row.get('avg_hr') or row.get('AVG_HR') or None
+                avg_hr = row.get('avg_hr') or row.get('Avg_HR') or row.get('AVG_HR') or None
                 try:
                     avg_hr = int(float(avg_hr)) if not pd.isna(avg_hr) else None
                 except:
@@ -567,116 +567,103 @@ def get_recent_workouts() -> Dict[str, Any]:
 
 @router.get("/selfcare-summary")
 def get_selfcare_summary() -> Dict[str, Any]:
-    """Get summary of selfcare/grooming activities"""
+    """Get summary of selfcare/grooming activities - days since last for sauna, yoga, dermapen"""
     try:
         excel_files = excel_service.find_excel_files()
         if not excel_files:
             return {"activities": []}
 
         file_path = excel_files[0]
-        data = excel_service.parse_excel_file(file_path)
-
-        # Define selfcare activities
-        # Daily: haircare, vegetables
-        # Occasional: dermapen, sauna_session, yoga_session
-        selfcare_config = [
-            {"search": "haircare", "display": "Haircare", "daily": True},
-            {"search": "vegetable", "display": "Vegetables", "daily": True},
-            {"search": "dermapen", "display": "Dermapen", "daily": False},
-            {"search": "sauna", "display": "Sauna", "daily": False},
-            {"search": "yoga", "display": "Yoga", "daily": False},
-        ]
 
         activities = []
+        today = datetime.now().date()
 
-        for config in selfcare_config:
-            search_term = config["search"]
-            display_name = config["display"]
-            is_daily = config["daily"]
+        # Read the Excel file directly to access sheets
+        xl_file = pd.ExcelFile(file_path)
 
-            # Find matching habit - match by name or ID
-            habit = next((h for h in data['habits'] if search_term.lower() in h.name.lower() or search_term.lower() in h.id.lower()), None)
+        # Check if multi-sheet format (has 'core' and 'habits' sheets)
+        has_core_sheet = 'core' in xl_file.sheet_names
+        has_habits_sheet = 'habits' in xl_file.sheet_names
 
-            if not habit:
-                continue
+        if has_core_sheet:
+            # Multi-sheet format: read core sheet for accessories column (sauna, yoga)
+            df_core = pd.read_excel(file_path, sheet_name='core')
 
-            # Get entries for this habit
-            habit_entries = [e for e in data['entries'] if e.habit_id == habit.id]
+            # Parse dates in core sheet
+            date_col = df_core.columns[0]
+            try:
+                df_core[date_col] = pd.to_datetime(df_core[date_col], dayfirst=True).dt.date
+            except:
+                try:
+                    df_core[date_col] = pd.to_datetime(df_core[date_col], format='%d.%m.%Y').dt.date
+                except:
+                    df_core[date_col] = pd.to_datetime(df_core[date_col]).dt.date
 
-            if not habit_entries:
-                # If no entries, still show the activity
-                if is_daily:
+            # Look for accessories column (case insensitive)
+            accessories_col = None
+            for col in df_core.columns:
+                if 'accessories' in str(col).lower():
+                    accessories_col = col
+                    break
+
+            # Parse sauna and yoga from accessories column
+            if accessories_col:
+                for activity_name in ['Sauna', 'Yoga']:
+                    keyword = activity_name.lower()
+                    last_date = None
+
+                    # Find most recent mention in accessories
+                    for _, row in df_core.iterrows():
+                        if pd.notna(row[accessories_col]) and pd.notna(row[date_col]):
+                            accessories_text = str(row[accessories_col]).lower()
+                            if keyword in accessories_text:
+                                entry_date = row[date_col]
+                                if last_date is None or entry_date > last_date:
+                                    last_date = entry_date
+
+                    # Calculate days since last
+                    days_since = None
+                    if last_date:
+                        days_since = (today - last_date).days
+
+                    # Select appropriate icon
+                    icon = '🧖' if activity_name == 'Sauna' else '🧘'
+
                     activities.append({
-                        "name": display_name,
-                        "type": "daily",
-                        "current_streak": 0,
-                        "completed_today": False
-                    })
-                else:
-                    activities.append({
-                        "name": display_name,
+                        "name": activity_name,
                         "type": "occasional",
-                        "days_since_last": None
+                        "days_since_last": days_since,
+                        "icon": icon
                     })
-                continue
 
-            # Sort by date
-            habit_entries.sort(key=lambda e: e.date.date() if hasattr(e.date, 'date') else e.date, reverse=True)
+        # Get dermapen from habits (either in habits sheet or main sheet)
+        data = excel_service.parse_excel_file(file_path)
 
-            if is_daily:
-                # Calculate current streak and check if completed today
-                completed_entries = [e for e in habit_entries if e.completed]
-                completed_entries.sort(key=lambda e: e.date.date() if hasattr(e.date, 'date') else e.date, reverse=True)
+        # Find dermapen habit
+        dermapen_habit = None
+        for h in data['habits']:
+            if 'dermapen' in h.name.lower() or 'dermapen' in h.id.lower():
+                dermapen_habit = h
+                break
 
-                current_streak = 0
-                if completed_entries:
-                    # Calculate streak from most recent completed
-                    for i, entry in enumerate(completed_entries):
-                        entry_date = entry.date.date() if hasattr(entry.date, 'date') else entry.date
-                        if i == 0:
-                            current_streak = 1
-                        else:
-                            prev_date = completed_entries[i-1].date.date() if hasattr(completed_entries[i-1].date, 'date') else completed_entries[i-1].date
-                            if (prev_date - entry_date).days == 1:
-                                current_streak += 1
-                            else:
-                                break
+        if dermapen_habit:
+            # Get entries for dermapen
+            dermapen_entries = [e for e in data['entries'] if e.habit_id == dermapen_habit.id and e.completed]
 
-                    # Check if completed today
-                    from datetime import datetime
-                    today = datetime.now().date()
-                    most_recent_date = completed_entries[0].date.date() if hasattr(completed_entries[0].date, 'date') else completed_entries[0].date
-                    completed_today = most_recent_date == today
-                else:
-                    completed_today = False
+            # Sort by date descending
+            dermapen_entries.sort(key=lambda e: e.date.date() if hasattr(e.date, 'date') else e.date, reverse=True)
 
-                activities.append({
-                    "name": display_name,
-                    "type": "daily",
-                    "current_streak": current_streak,
-                    "completed_today": completed_today
-                })
-            else:
-                # Occasional activity - show days since last
-                completed_entries = [e for e in habit_entries if e.completed]
+            days_since = None
+            if dermapen_entries:
+                last_date = dermapen_entries[0].date.date() if hasattr(dermapen_entries[0].date, 'date') else dermapen_entries[0].date
+                days_since = (today - last_date).days
 
-                if completed_entries:
-                    from datetime import datetime
-                    today = datetime.now().date()
-                    last_date = completed_entries[0].date.date() if hasattr(completed_entries[0].date, 'date') else completed_entries[0].date
-                    days_since = (today - last_date).days
-
-                    activities.append({
-                        "name": display_name,
-                        "type": "occasional",
-                        "days_since_last": days_since
-                    })
-                else:
-                    activities.append({
-                        "name": display_name,
-                        "type": "occasional",
-                        "days_since_last": None
-                    })
+            activities.append({
+                "name": "Dermapen",
+                "type": "occasional",
+                "days_since_last": days_since,
+                "icon": "💧"
+            })
 
         return {"activities": activities}
 
