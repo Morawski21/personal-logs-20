@@ -2,9 +2,40 @@
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Settings as SettingsIcon, Eye, EyeOff, Trash2, GripVertical, Save, RotateCcw, Archive } from 'lucide-react'
+import {
+  Settings as SettingsIcon, Eye, EyeOff, Trash2, GripVertical, Save, RotateCcw, Archive,
+  Zap, Target, Book, Guitar, Dumbbell, Heart,
+  Coffee, Smartphone, Tv, GameController2, Youtube,
+  Code, Music, Camera, Palette, Headphones,
+  Star, Flame, Trophy, Sparkles,
+  type LucideIcon
+} from 'lucide-react'
 import { useHabitStore } from '@/stores/habitStore'
 import type { Habit } from '@/types/habit'
+
+// Available icons for selection
+const availableIcons: { name: string; icon: LucideIcon }[] = [
+  { name: 'Zap', icon: Zap },
+  { name: 'Target', icon: Target },
+  { name: 'Book', icon: Book },
+  { name: 'Guitar', icon: Guitar },
+  { name: 'Dumbbell', icon: Dumbbell },
+  { name: 'Heart', icon: Heart },
+  { name: 'Coffee', icon: Coffee },
+  { name: 'Smartphone', icon: Smartphone },
+  { name: 'Tv', icon: Tv },
+  { name: 'GameController2', icon: GameController2 },
+  { name: 'Youtube', icon: Youtube },
+  { name: 'Code', icon: Code },
+  { name: 'Music', icon: Music },
+  { name: 'Camera', icon: Camera },
+  { name: 'Palette', icon: Palette },
+  { name: 'Headphones', icon: Headphones },
+  { name: 'Star', icon: Star },
+  { name: 'Flame', icon: Flame },
+  { name: 'Trophy', icon: Trophy },
+  { name: 'Sparkles', icon: Sparkles },
+]
 
 interface EditableHabit extends Habit {
   isEditing?: boolean
@@ -121,6 +152,7 @@ export function Settings() {
     await updateHabit(habit.id, {
       name: habit.name,
       emoji: habit.emoji,
+      icon: habit.icon,
       is_personal: habit.is_personal
     })
     toggleEdit(habit.id)
@@ -210,6 +242,18 @@ export function Settings() {
                           className="w-12 text-center text-xl bg-white/10 border border-white/30 rounded px-2 py-1 text-white"
                           maxLength={2}
                         />
+                        <select
+                          value={habit.icon || ''}
+                          onChange={(e) => handleInputChange(habit.id, 'icon', e.target.value)}
+                          className="w-32 bg-white/10 border border-white/30 rounded px-2 py-2 text-white text-sm"
+                        >
+                          <option value="">No Icon</option>
+                          {availableIcons.map((iconItem) => (
+                            <option key={iconItem.name} value={iconItem.name}>
+                              {iconItem.name}
+                            </option>
+                          ))}
+                        </select>
                         <input
                           type="text"
                           value={habit.name}
@@ -229,10 +273,16 @@ export function Settings() {
                     ) : (
                       <div className="flex items-center gap-4 flex-1">
                         <span className="text-2xl">{habit.emoji}</span>
+                        {habit.icon && (() => {
+                          const iconData = availableIcons.find(i => i.name === habit.icon)
+                          const IconComponent = iconData?.icon
+                          return IconComponent ? <IconComponent className="h-5 w-5 text-cyan-400" /> : null
+                        })()}
                         <div className="flex-1">
                           <h3 className="font-semibold text-white/90">{habit.name}</h3>
                           <div className="flex items-center gap-2 text-sm text-white/60">
                             <span>{habit.habit_type}</span>
+                            {habit.icon && <span className="text-xs">• Icon: {habit.icon}</span>}
                             {habit.is_personal && (
                               <div className="flex items-center gap-1">
                                 <EyeOff className="h-3 w-3" />

@@ -4,9 +4,44 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { Star, Flame, Trophy, GripVertical, Sparkles } from 'lucide-react'
+import {
+  Star, Flame, Trophy, GripVertical, Sparkles,
+  Zap, Target, Book, Guitar, Dumbbell, Heart,
+  Coffee, Smartphone, Tv, GameController2, Youtube,
+  Code, Music, Camera, Palette, Headphones,
+  type LucideIcon
+} from 'lucide-react'
 import type { Habit } from '@/types/habit'
 import { cn } from '@/lib/utils'
+
+// Icon mapping for habits
+const iconMap: Record<string, LucideIcon> = {
+  'Zap': Zap,
+  'Target': Target,
+  'Book': Book,
+  'Guitar': Guitar,
+  'Dumbbell': Dumbbell,
+  'Heart': Heart,
+  'Coffee': Coffee,
+  'Smartphone': Smartphone,
+  'Tv': Tv,
+  'GameController2': GameController2,
+  'Youtube': Youtube,
+  'Code': Code,
+  'Music': Music,
+  'Camera': Camera,
+  'Palette': Palette,
+  'Headphones': Headphones,
+  'Star': Star,
+  'Flame': Flame,
+  'Trophy': Trophy,
+  'Sparkles': Sparkles,
+}
+
+const getHabitIcon = (iconName?: string): LucideIcon | null => {
+  if (!iconName) return null
+  return iconMap[iconName] || null
+}
 
 interface HabitCardProps {
   habit: Habit
@@ -126,6 +161,16 @@ export function HabitCard({ habit, className }: HabitCardProps) {
       >
         <GripVertical className="h-3 w-3 text-white/60" />
       </div>
+
+      {/* Icon */}
+      {(() => {
+        const HabitIcon = getHabitIcon(habit.icon)
+        return HabitIcon ? (
+          <div className="flex-shrink-0">
+            <HabitIcon className="h-6 w-6" style={{ color: cardStyles.streakColor }} />
+          </div>
+        ) : null
+      })()}
 
       {/* Name and Progress */}
       <div className="flex-1 min-w-0">
